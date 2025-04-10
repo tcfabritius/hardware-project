@@ -21,7 +21,7 @@ class isr_fifo(Fifo):
         self.dbg.toggle()
 
 
-samples = isr_fifo(100, 27)  # create the improved fifo: size = 50, adc pin = pin_nr
+samples = isr_fifo(500, 27)  # create the improved fifo: size = 50, adc pin = pin_nr
 tmr = Piotimer(period=10, mode=Piotimer.PERIODIC, callback=samples.handler)
 x = 0
 average = 0
@@ -32,26 +32,37 @@ last = 0
 last_peak = 0
 peak = 0
 number = 0
+skip = 0
 for y in range(500):
-    number = samples.get()
-    if number < min:
-        min = number
-    if number > max:
-        max = number
+    if not samples.empty():
+        print(y)
+        number = samples.get()
+        if number < min:
+            min = number
+        if number > max:
+            max = number
+
     if y == 499:
+        print(y)
         average = (min + max) / 2
+        print(f"Min {min}")
+        print(f"Max {max}")
+        print(f"Average {average}")
         min = 65535
         max = 0
 
 while True:
     if not samples.empty():
-        if x % 500 == 0:
+        if x % 500 == 0 and skip != 0:
             number = samples.get()
             if number < min:
                 min = number
             if number > max:
                 max = number
+            print(f"min {min}")
+            print(f"max {max}")
             average = (min + max) / 2
+            print(f"average {average}")
             min = 65535
             max = 0
         else:
@@ -62,21 +73,28 @@ while True:
                 max = number
 
         if number - last < 0 and first_occurrence and number > average and number != 0:
+            print(f"Number {number}")
+            print(f"Last {last}")
+            print(f"Average {average}")
             peak = x
             first_occurrence = False
 
-        if number - last > 0:
+        if number < average:
             first_occurrence = True
 
         if last_peak != 0 or peak != 0:
             if peak - last_peak > 60:
+                print(f"Peak {peak}")
+                print(f"Last peak {last_peak}")
                 interval = peak - last_peak
                 interval = interval / 250
                 if interval != 0:
                     bpm = int(60 / interval)
-                    print(bpm)
+                    print(f"BPM {bpm}")
 
-        time.sleep_ms(10)
         last_peak = peak
         last = number
         x += 1
+        skip += 1
+
+
