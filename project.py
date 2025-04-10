@@ -32,10 +32,25 @@ last = 0
 last_peak = 0
 peak = 0
 number = 0
-# to read:
+for y in range(500):
+    number = samples.get()
+    if number < min:
+        min = number
+    if number > max:
+        max = number
+    if y == 499:
+        average = (min + max) / 2
+        min = 65535
+        max = 0
+
 while True:
     if not samples.empty():
         if x % 500 == 0:
+            number = samples.get()
+            if number < min:
+                min = number
+            if number > max:
+                max = number
             average = (min + max) / 2
             min = 65535
             max = 0
