@@ -45,6 +45,7 @@ while True:
                 min = number
             if number > max:
                 max = number
+
         if number - last < 0 and first_occurrence and number > average and peak != 0 and number != 0:
             peak = x
             first_occurrence = False
@@ -52,13 +53,11 @@ while True:
         if number - last > 0:
             first_occurrence = True
 
-        try:
+        if last_peak != 0 or peak != 0:
             interval = last_peak - peak
             interval = interval / 250
             bpm = int(60 / interval)
             print(bpm)
-        except:
-            pass
 
         time.sleep_ms(20)
         last_peak = peak
