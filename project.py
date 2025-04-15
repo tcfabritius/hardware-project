@@ -36,6 +36,12 @@ peak = 0
 number = 0
 skip = 0
 y = 0
+hr = []
+mean_hr = 0
+ppi = []
+mean_ppi = 0
+rmssd = 0
+sdnn = 0
 while y < 500:
     if not samples.empty():
         # print(y)
@@ -55,7 +61,7 @@ while y < 500:
         min = 65535
         max = 0
 
-while True:
+while x < 7500:
     if not samples.empty():
         if x % 500 == 0:
             number = samples.get()
@@ -94,13 +100,30 @@ while True:
 
                 if interval != 0:
                     interval = interval / 250
+                    ppi.append(interval * 1000)
                     bpm = int(60 / interval)
                     if 30 <= bpm <= 240:
+                        hr.append(bpm)
                         print(f"BPM {bpm}")
 
         last_peak = peak
         last = number
         x += 1
 
+total = 0
+for pi in ppi:
+    total = total + pi
 
+mean_ppi = total / len(ppi)
+print(mean_ppi)
 
+total = 0
+for h in hr:
+    total = total + h
+mean_hr = total / len(hr)
+print(mean_hr)
+for pi in ppi:
+    sdnn = sdnn + (pi - mean_ppi) ** 2
+sdnn = (1 / len(ppi) - 1) * sdnn
+sdnn = sdnn ** 0.5
+print(sdnn)
