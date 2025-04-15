@@ -8,12 +8,22 @@ import time
 import micropython
 micropython.alloc_emergency_exception_buf(200)
 
-#Menu
-items = [1,2,3,4,5,6,7]
+#Menu and OLED
+items = [1,2,3]
 menuIndex = 0
 events = Fifo(30)
 i2c = I2C(1, scl=Pin(15), sda=Pin(14), freq=400000)
 oled = SSD1306_I2C(128, 64, i2c)
+
+class UserInterface():
+    index = 0
+    
+    def __init__(self):
+        print("Hello")
+        
+    def loadMenuContent(givenIndex):
+        index = givenIndex
+        return index
 
 class InterruptButton:
     def __init__(self, button_pin, fifo):
@@ -24,7 +34,7 @@ class InterruptButton:
     
     def handler(self, pin):
         now = time.ticks_ms()
-        if time.ticks_diff(now, self.lastPress) > 250: #50ms cooldown
+        if time.ticks_diff(now, self.lastPress) > 250: #250ms cooldown
             self.lastPress = now
             self.fifo.put(0)
 
@@ -46,14 +56,15 @@ class Encoder:
 def updateMenu():
     oled.fill(0)
     oled.text("MAIN----------", 1, 1, 1)
-    for i in range(3):
+    x = len(items)
+    for i in range(x):
         if i == menuIndex:
             selected = "8>"
         else:
             selected = "  "
             
         main = f"{selected} Menu {i+1}"
-        #(i+x) -> x is yOffset
+        #(i+x) -> x = yOffset
         oled.text(main, 1, (i+1)*13, 1)
         oled.show()
 
@@ -69,6 +80,9 @@ class isr_fifo(Fifo):
         # this is to be registered as an ISR. Floats are not available in ISR
         self.put(self.av.read_u16())
         self.dbg.toggle()
+
+#Menu
+Ui = UserInterface()
 
 #BPM mmeasurement values
 samples = isr_fifo(500, 27)  # create the improved fifo: size = 50, adc pin = pin_nr
