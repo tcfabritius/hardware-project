@@ -1,4 +1,5 @@
 from piotimer import Piotimer
+import filefifo
 from machine import Pin, ADC
 from fifo import Fifo
 import time
@@ -22,8 +23,9 @@ class isr_fifo(Fifo):
 
 
 samples = isr_fifo(500, 27)  # create the improved fifo: size = 50, adc pin = pin_nr
+# samples = filefifo.Filefifo(50, name = 'capture01_250Hz.txt')
 tmr = Piotimer(period=10, freq=250, mode=Piotimer.PERIODIC, callback=samples.handler)
-x = 0
+x = 1
 average = 0
 min = 65535
 max = 0
@@ -55,7 +57,7 @@ while y < 500:
 
 while True:
     if not samples.empty():
-        if x % 500 == 0 and skip != 0:
+        if x % 500 == 0:
             number = samples.get()
             if number < min:
                 min = number
@@ -63,7 +65,7 @@ while True:
                 max = number
             # print(f"min {min}")
             # print(f"max {max}")
-            average = (min + max) / 2
+            average = (min + max) / 2 + (max - min) * 0.15
             # print(f"average {average}")
             min = 65535
             max = 0
@@ -99,6 +101,6 @@ while True:
         last_peak = peak
         last = number
         x += 1
-        skip += 1
+
 
 
