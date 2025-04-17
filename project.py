@@ -115,15 +115,21 @@ for pi in ppi:
     total = total + pi
 
 mean_ppi = total / len(ppi)
-print(mean_ppi)
+print(f"Mean PPI: {mean_ppi}")
 
 total = 0
 for h in hr:
     total = total + h
 mean_hr = total / len(hr)
-print(mean_hr)
+print(f"Mean HR: {mean_hr}")
 for pi in ppi:
     sdnn = sdnn + (pi - mean_ppi) ** 2
-sdnn = (1 / len(ppi) - 1) * sdnn
+sdnn = (1 / (len(ppi) - 1)) * sdnn
 sdnn = sdnn ** 0.5
-print(sdnn)
+print(f"SDNN: {sdnn}")
+for r in range(len(ppi) - 1):
+    rmssd = rmssd + (ppi[r + 1] - ppi[r]) ** 2
+rmssd = (1 / (len(ppi) - 1)) * rmssd
+rmssd = rmssd ** 0.5
+print(f"RMSSD: {rmssd}")
+
