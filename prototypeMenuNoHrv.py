@@ -55,7 +55,7 @@ def showSelection(index):
         global mainMenuActive
         mainMenuActive = False
         oled.fill(0)
-        oled.text(f"Measure HR", 1, 1, 1)
+        oled.text("Measure HR----------", 1, 1, 1)
         oled.text("Rot 1: Exit.", 1, 20, 1)
         oled.show()
         time.sleep(1)
@@ -64,7 +64,7 @@ def showSelection(index):
         global mainMenuActive
         mainMenuActive = False
         oled.fill(0)
-        oled.text(f"Basic HRV Analysis", 1, 1, 1)
+        oled.text("HRV Analysis----------", 1, 1, 1)
         oled.text("Rot 1: Exit.", 1, 20, 1)
         oled.show()
         time.sleep(1)
@@ -73,7 +73,7 @@ def showSelection(index):
         global mainMenuActive
         mainMenuActive = False
         oled.fill(0)
-        oled.text(f"Kubios Cloud", 1, 1, 1)
+        oled.text("Kubios Cloud----------", 1, 1, 1)
         oled.text("Rot 1: Exit.", 1, 20, 1)
         oled.show()
         time.sleep(1)
@@ -82,7 +82,7 @@ def showSelection(index):
         global mainMenuActive
         mainMenuActive = False
         oled.fill(0)
-        oled.text(f"History", 1, 1, 1)
+        oled.text("History----------", 1, 1, 1)
         oled.text("Rot 1: Exit.", 1, 20, 1)
         oled.show()
         time.sleep(1)
