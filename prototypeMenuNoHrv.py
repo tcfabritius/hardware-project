@@ -9,12 +9,17 @@ import micropython
 micropython.alloc_emergency_exception_buf(200)
 
 #Menu and OLED
-items = [1,2,3]
+menuItems = [
+    "Measure HRV",
+    "HRV Analysis",
+    "Kubios Cloud",
+    "History"
+]
 menuIndex = 0
 events = Fifo(30)
 i2c = I2C(1, scl=Pin(15), sda=Pin(14), freq=400000)
 oled = SSD1306_I2C(128, 64, i2c)
-menuActive = True
+mainMenuActive = True
 
 class InterruptButton:
     def __init__(self, button_pin, fifo):
@@ -45,33 +50,78 @@ class Encoder:
             self.fifo.put(1)
 
 def showSelection(index):
-    global menuActive
-    oled.fill(0)
-    oled.text("Selected:", 1, 1, 1)
-    oled.text(f"Menu {index+1}", 1, 20, 1)
-    oled.show()
-    time.sleep(0.1)
-    menuActive = False
-    oled.fill(0)
-    oled.text(f"Menu {index+1}", 1, 1, 1)
-    oled.text("Rot1 = Exit.", 1, 20, 1)
-    oled.show()
-    time.sleep(1)
+# Static if-structure
+    if index == 0:
+        global mainMenuActive
+        mainMenuActive = False
+        oled.fill(0)
+        oled.text(f"Measure HR", 1, 1, 1)
+        oled.text("Rot 1: Exit.", 1, 20, 1)
+        oled.show()
+        time.sleep(1)
+        
+    elif index == 1:
+        global mainMenuActive
+        mainMenuActive = False
+        oled.fill(0)
+        oled.text(f"Basic HRV Analysis", 1, 1, 1)
+        oled.text("Rot 1: Exit.", 1, 20, 1)
+        oled.show()
+        time.sleep(1)
+    
+    elif index == 2:
+        global mainMenuActive
+        mainMenuActive = False
+        oled.fill(0)
+        oled.text(f"Kubios Cloud", 1, 1, 1)
+        oled.text("Rot 1: Exit.", 1, 20, 1)
+        oled.show()
+        time.sleep(1)
+    
+    elif index == 3:
+        global mainMenuActive
+        mainMenuActive = False
+        oled.fill(0)
+        oled.text(f"History", 1, 1, 1)
+        oled.text("Rot 1: Exit.", 1, 20, 1)
+        oled.show()
+        time.sleep(1)
+
+# Heart bitmap 8x8 in hex
+heart_bitmap = [
+    0x42,  # 01000010
+    0xEE,  # 11101110
+    0xFF,  # 11111111
+    0xFF,  # 11111111
+    0x7E,  # 01111110
+    0x3C,  # 00111100
+    0x18,  # 00011000
+    0x00   # 00000000
+]
+
+def draw_bitmap(oled, bitmap, x, y):
+    for i, row in enumerate(bitmap):
+        for j in range(8):
+            if row & (1 << j):
+                oled.pixel(x + j, y + i, 1)
+            else:
+                oled.pixel(x + j, y + i, 0)
 
 def updateMenu():
     oled.fill(0)
     oled.text("MAIN----------", 1, 1, 1)
-    x = len(items)
-    for i in range(x):
-        if i == menuIndex:
-            selected = "8>"
+    menuLength = len(menuItems)
+
+    for j in range(menuLength):
+        if j == menuIndex:
+            draw_bitmap(oled, heart_bitmap, 1, (j+1)*13)
         else:
-            selected = "  "
-            
-        main = f"{selected} Menu {i+1}"
-        #(i+x) -> x = yOffset
-        oled.text(main, 1, (i+1)*13, 1)
-        oled.show()
+            oled.text(" ", 1, (j+1)*13, 1)
+
+        main = f"{j+1}. {menuItems[j]}"
+        oled.text(main, 10, (j+1)*13, 1)
+
+    oled.show()
 
 rotFifo = Fifo(30, typecode='i')
 rot = Encoder(10, 11, rotFifo)
@@ -79,11 +129,11 @@ button = InterruptButton(12, events)
 updateMenu()
    
 while True:
-    if menuActive:
+    if mainMenuActive:
         #Navigation
         if rotFifo.has_data():
             while rotFifo.has_data():
-                menuIndex = (menuIndex + rotFifo.get()) % len(items)
+                menuIndex = (menuIndex + rotFifo.get()) % len(menuItems)
             updateMenu()
 
         #On menu
@@ -94,11 +144,10 @@ while True:
     else:
         while rotFifo.has_data():
             rotFifo.get()
+            
         #Wait for button press to re-enter
         if events.has_data():
             event = events.get()
             if event == 0:
-                menuActive = True
+                mainMenuActive = True
                 updateMenu()
-
-
