@@ -19,6 +19,33 @@ led = Pin(25, Pin.OUT)
 samplegraph = []
 samplesum = 0
 sampleavg = 0
+averageG = 0
+samples = isr_fifo(750, 27)
+tmr = Piotimer(period=10, freq=250, mode=Piotimer.PERIODIC, callback=samples.handler)
+yG = 0
+minGV = 0
+maxGV = 0
+x = 1
+average = 0
+minV = 65535
+maxV = 0
+first_occurrence = True
+last = 0
+last_peak = 0
+peak = 0
+number = 0
+skip = 0
+y = 0
+hr = []
+mean_hr = 0
+ppi = []
+mean_ppi = 0
+rmssd = 0
+sdnn = 0
+lastX = 0
+GRAPH_HEIGHT = 64
+GRAPH_WIDTH = 128
+y_values = [GRAPH_HEIGHT // 2] * GRAPH_WIDTH
 
 # subclass Fifo to add handler that can be registered as timer callback
 class isr_fifo(Fifo):
@@ -84,34 +111,7 @@ def signal_graph(val, x):
         oled.show()  # Don't forget to update the screen
 
 
-averageG = 0
-samples = isr_fifo(750, 27)  # create the improved fifo: size = 50, adc pin = pin_nr
-# samples = filefifo.Filefifo(50, name = 'capture01_250Hz.txt')
-tmr = Piotimer(period=10, freq=250, mode=Piotimer.PERIODIC, callback=samples.handler)
-yG = 0
-minGV = 0
-maxGV = 0
-x = 1
-average = 0
-minV = 65535
-maxV = 0
-first_occurrence = True
-last = 0
-last_peak = 0
-peak = 0
-number = 0
-skip = 0
-y = 0
-hr = []
-mean_hr = 0
-ppi = []
-mean_ppi = 0
-rmssd = 0
-sdnn = 0
-lastX = 0
-GRAPH_HEIGHT = 64
-GRAPH_WIDTH = 128
-y_values = [GRAPH_HEIGHT // 2] * GRAPH_WIDTH
+
 
 while y < 500:
     if not samples.empty():
