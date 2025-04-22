@@ -20,8 +20,6 @@ samplegraph = []
 samplesum = 0
 sampleavg = 0
 averageG = 0
-samples = isr_fifo(750, 27)
-tmr = Piotimer(period=10, freq=250, mode=Piotimer.PERIODIC, callback=samples.handler)
 yG = 0
 minGV = 0
 maxGV = 0
@@ -59,7 +57,10 @@ class isr_fifo(Fifo):
         # this is to be registered as an ISR. Floats are not available in ISR
         self.put(self.av.read_u16())
         self.dbg.toggle()
-        
+   
+samples = isr_fifo(750, 27)
+tmr = Piotimer(period=10, freq=250, mode=Piotimer.PERIODIC, callback=samples.handler)
+
 def scale(value, min_val=25000, max_val=65000, height=64):
     """
     Scales the raw ADC value to fit within the OLED display height.
@@ -109,9 +110,6 @@ def signal_graph(val, x):
             oled.line(x - 1, y_values[x - 1], x, y_values[x], 1)
 
         oled.show()  # Don't forget to update the screen
-
-
-
 
 while y < 500:
     if not samples.empty():
