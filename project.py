@@ -57,7 +57,8 @@ class isr_fifo(Fifo):
         # this is to be registered as an ISR. Floats are not available in ISR
         self.put(self.av.read_u16())
         self.dbg.toggle()
-   
+
+#Fifo and timer instantiation
 samples = isr_fifo(750, 27)
 tmr = Piotimer(period=10, freq=250, mode=Piotimer.PERIODIC, callback=samples.handler)
 
@@ -78,100 +79,70 @@ def scaler(value, minVal, maxVal):
     return min(max(scaled, 0), 63)
 
 def show_BPM(bpm):
-    
     # Display the "BPM" label at the top-left corner
     oled.text("BPM:", bpm, 0, 0)
-
     # Update the display
-    #oled.show()
+    oled.show()
 
 def signal_graph(val, x):
-    
     samplegraph.append(val)
-
     if len(samplegraph) == 5:
         samplesum = sum(samplegraph)
         sampleavg = samplesum / 5
         samplegraph.clear()  # <- Make sure to call clear()
-
         # Convert the average to an integer for pixel drawing
-        y_axis = int(sampleavg)
-
+        y_axis = scale(sampleavg)
         # Shift the graph data left to simulate scrolling
         for i in range(GRAPH_WIDTH - 1):
             y_values[i] = y_values[i + 1]
         y_values[-1] = y_axis  # <- Use sampleavg as the new y value
-
         # Clear the OLED display
         oled.fill(0)
-
         # Draw the updated waveform
         for x in range(1, GRAPH_WIDTH):
             oled.line(x - 1, y_values[x - 1], x, y_values[x], 1)
-
-        oled.show()  # Don't forget to update the screen
+        #oled.show()  # Don't forget to update the screen
 
 while y < 500:
     if not samples.empty():
-        # print(y)
         number = samples.get()
         if number < minV:
             minV = number
         if number > maxV:
             maxV = number
         y += 1
-
     if y == 499:
-        # print(y)
         average = (minV + maxV) / 2
-        #print(f"Min {minV}")
-        # print(f"Max {maxV}")
-        # print(f"Average {average}")
         minV = 65535
         maxV = 0
         y += 1
 
 while x < 7500:        
     if not samples.empty():
-        print(x)
         if x % 500 == 0:
             number = samples.get()
             if number < minV:
                 minV = number
             if number > maxV:
                 maxV = number
-            # print(f"min {min}")
-            # print(f"max {max}")
             average = (minV + maxV) / 2 + (maxV - minV) * 0.15
-            # print(f"average {average}")
             minV = 65535
             maxV = 0
-            #samples.clear()
         else:
             number = samples.get()
             if number < minV:
                 minV = number
             if number > maxV:
                 maxV = number
-                
         signal_graph(number, x)
-        
         if number - last < 0 and first_occurrence and number > average and number != 0:
-            # print(f"Number {number}")
-            # print(f"Last {last}")
-            # print(f"Average {average}")
             peak = x
             first_occurrence = False
-
         if number < average:
             first_occurrence = True
-
         if last_peak != 0 or peak != 0:
             if peak - last_peak > 60:
-                # print(f"Peak {peak}")
-                # print(f"Last peak {last_peak}")
                 interval = (peak - last_peak)
-
                 if interval != 0:
                     interval = interval / 250
                     ppi.append(interval * 1000)
@@ -179,18 +150,16 @@ while x < 7500:
                     if 30 <= bpm <= 240:
                         hr.append(bpm)
                         show_BPM(bpm)
-
         last_peak = peak
         last = number
         lastX = x
         x += 1
-        if x%30 == 0:
+        if x % 30 == 0:
             oled.show()  
 
 total = 0
 for pi in ppi:
     total = total + pi
-
 mean_ppi = total / len(ppi)
 print(f"Mean PPI: {mean_ppi}")
 
