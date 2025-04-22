@@ -14,13 +14,12 @@ oled = SSD1306_I2C(128, 64, i2c)
 pulse = ADC(27)
 led = Pin(25, Pin.OUT)
 
-# === Graph Setup ===
-GRAPH_HEIGHT = 64
-GRAPH_WIDTH = 128
-y_values = [GRAPH_HEIGHT // 2] * GRAPH_WIDTH  # Initialize with a flat line
-
-
 def signal_graph():
+
+    # === Graph Setup ===
+    GRAPH_HEIGHT = 64
+    GRAPH_WIDTH = 128
+    y_values = [GRAPH_HEIGHT // 2] * GRAPH_WIDTH  # Initialize with a flat line
 
     # === Scaling Function ===
     def scale(value, min_val=25000, max_val=65000, height=64):
