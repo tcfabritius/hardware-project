@@ -89,11 +89,9 @@ GRAPH_WIDTH = 128
 id = 1
 y_values = [GRAPH_HEIGHT // 2] * GRAPH_WIDTH
 
-
 client = MQTTClient("timf", BROKER_IP, port=21883)  
 
-
-def kubios_request(id, data)
+def kubios_request(id, data):
     client.connect()
     request = {
             "id":id,
@@ -114,7 +112,7 @@ current_time = time.localtime()
         "mean_ppi": mean_ppi,
         "rmssd": rmssd,
         "sdnn": sdnn
-    lient.publish("hr-data", request)
+    client.publish("hr-data", request)
 
 
 # === Menu functionality ===
@@ -304,7 +302,8 @@ def HRVAnalysis():
                 oled.show()  
 
     tmr.deinit()
-    kubios_requests(id, ppi)
+    global id
+    kubios_request(id, ppi)
     id += 1
     total = 0
     for pi in ppi:
