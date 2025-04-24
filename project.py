@@ -26,6 +26,7 @@ pulse = ADC(27)
 led = Pin(25, Pin.OUT)
 
 # === HRV-variables ===
+bpm = 0
 samplegraph = []
 samplesum = 0
 sampleavg = 0
@@ -179,7 +180,9 @@ def signal_graph(val, x):
         for x in range(1, GRAPH_WIDTH):
             oled.line(x - 1, y_values[x - 1], x, y_values[x], 1)
         #oled.show()  # Don't forget to update the screen
-
+        oled.text("BPM:"+str(bpm), 10, 10)
+        
+    
 # === HRV-analysis ===
 def HRVAnalysis():
     global x, y, last, last_peak, peak, first_occurrence
@@ -233,10 +236,10 @@ def HRVAnalysis():
                     if interval != 0:
                         interval = interval / 250
                         ppi.append(interval * 1000)
+                        global bpm
                         bpm = int(60 / interval)
                         if 30 <= bpm <= 240:
                             hr.append(bpm)
-                            show_BPM(bpm)
             last_peak = peak
             last = number
             lastX = x
