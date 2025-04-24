@@ -293,6 +293,7 @@ def HRVAnalysis():
     rmssd = (1 / (len(ppi) - 1)) * rmssd
     rmssd = rmssd ** 0.5
     print(f"RMSSD: {rmssd}")
+    showResults()
 
 def showSelection(index):
 # Static if-structure
@@ -337,6 +338,17 @@ def showSelection(index):
         oled.fill(0)
         oled.text("History----------", 1, 1, 1)
         oled.text("Rot 1: Exit.", 1, 20, 1)
+        oled.show()
+        time.sleep(1)
+
+def showResults():
+        global mainMenuActive
+        mainMenuActive = False
+        oled.fill(0)
+        oled.text("Mean HR:"+str(mean_hr), 1, 1, 1)
+        oled.text("Mean PPI:"+str(mean_ppi), 1, 10, 1)
+        oled.text("RMSSD:"+str(rmssd), 1, 20, 1)
+        oled.text("SDNN:"+str(sdnn), 1, 30, 1)
         oled.show()
         time.sleep(1)
 
