@@ -349,7 +349,8 @@ def showResults():
         oled.text("Mean PPI: " + str(int(mean_ppi)), 1, 10, 1)
         oled.text("RMSSD: " + str(int(rmssd)), 1, 20, 1)
         oled.text("SDNN: " + str(int(sdnn)), 1, 30, 1)
-        oled.text("Press button to continue:", 1, 40, 1)
+        oled.text("Press button", 1, 40, 1)
+        oled.text("to continue:", 1, 50, 1)
         oled.show()
         time.sleep(1)
 
