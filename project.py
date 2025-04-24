@@ -9,6 +9,8 @@ import micropython
 import mip
 import network
 from time import sleep
+from umqtt.simple import MQTTClient
+
 
 
 micropython.alloc_emergency_exception_buf(200)
@@ -84,7 +86,22 @@ sdnn = 0
 lastX = 0
 GRAPH_HEIGHT = 64
 GRAPH_WIDTH = 128
+id = 1
 y_values = [GRAPH_HEIGHT // 2] * GRAPH_WIDTH
+
+
+client = MQTTClient("timf", BROKER_IP, port=21883)  
+
+
+def kubios_request(id, data)
+    client.connect()
+    request = {
+            "id":id,
+            "type": "RRI",
+            "data": data,
+            ""analysis": { "type": "readiness" }
+        } 
+    client.publish("kubios-request", request)
 
 # === Menu functionality ===
 class InterruptButton:
@@ -264,6 +281,7 @@ def HRVAnalysis():
                         bpm = int(60 / interval)
                         if 30 <= bpm <= 240:
                             hr.append(bpm)
+                            
             last_peak = peak
             last = number
             lastX = x
@@ -272,6 +290,9 @@ def HRVAnalysis():
                 oled.show()  
 
     tmr.deinit()
+    kubios_requests(id, ppi)
+    global id
+    id += 1
     total = 0
     for pi in ppi:
         total = total + pi
@@ -294,6 +315,7 @@ def HRVAnalysis():
     rmssd = rmssd ** 0.5
     print(f"RMSSD: {rmssd}")
     showResults()
+    
 
 def showSelection(index):
 # Static if-structure
