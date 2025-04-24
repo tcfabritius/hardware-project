@@ -10,6 +10,8 @@ import mip
 import network
 from time import sleep
 from umqtt.simple import MQTTClient
+import json
+
 
 
 
@@ -99,19 +101,22 @@ def kubios_request(id, data):
             "data": data,
             "analysis": { "type": "readiness" }
         } 
-    client.publish("kubios-request", request)
+    client.publish("kubios-request", json.dumps(request))
+    client.disconnect()
     
 def hr_data(id, mean_hr, mean_ppi, rmssd, sdnn):
     client.connect()
-    current_time = time.localtime(),
+    current_time = time.localtime()
     request = {
         "id": id,
+        "timestamp": current_time,
         "mean_hr": mean_hr,
         "mean_ppi": mean_ppi,
         "rmssd": rmssd,
         "sdnn": sdnn
         }
-    client.publish("hr-data", request)
+    client.publish("hr-data", json.dumps(request))
+    client.disconnect()
 
 # === Menu functionality ===
 class InterruptButton:
@@ -411,3 +416,4 @@ while True:
             if event == 0:
                 mainMenuActive = True
                 updateMenu()
+
