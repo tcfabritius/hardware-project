@@ -89,7 +89,7 @@ GRAPH_WIDTH = 128
 id = 1
 y_values = [GRAPH_HEIGHT // 2] * GRAPH_WIDTH
 
-client = MQTTClient("timf", BROKER_IP, port=21883)  
+client = MQTTClient("timf", BROKER_IP, port=21883)
 
 def kubios_request(id, data):
     client.connect()
@@ -103,17 +103,15 @@ def kubios_request(id, data):
     
 def hr_data(id, mean_hr, mean_ppi, rmssd, sdnn):
     client.connect()
+    current_time = time.localtime(),
     request = {
         "id": id,
-        "timestamp": 
-current_time = time.localtime()
-,
         "mean_hr": mean_hr,
         "mean_ppi": mean_ppi,
         "rmssd": rmssd,
         "sdnn": sdnn
+        }
     client.publish("hr-data", request)
-
 
 # === Menu functionality ===
 class InterruptButton:
