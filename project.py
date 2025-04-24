@@ -244,6 +244,7 @@ def HRVAnalysis():
             if x % 30 == 0:
                 oled.show()  
 
+    tmr.deinit()
     total = 0
     for pi in ppi:
         total = total + pi
