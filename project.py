@@ -156,12 +156,6 @@ def scaler(value, minVal, maxVal):
     scaled = int((value - minVal) * 63 / (maxVal - minVal))
     return min(max(scaled, 0), 63)
 
-def show_BPM(bpm):
-    # Display the "BPM" label at the top-left corner
-    oled.text("BPM:", bpm, 0, 0)
-    # Update the display
-    oled.show()
-
 def signal_graph(val, x):
     samplegraph.append(val)
     if len(samplegraph) == 5:
