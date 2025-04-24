@@ -99,9 +99,23 @@ def kubios_request(id, data)
             "id":id,
             "type": "RRI",
             "data": data,
-            ""analysis": { "type": "readiness" }
+            "analysis": { "type": "readiness" }
         } 
     client.publish("kubios-request", request)
+    
+def hr_data(id, mean_hr, mean_ppi, rmssd, sdnn):
+    client.connect()
+    request = {
+        "id": id,
+        "timestamp": 
+current_time = time.localtime()
+,
+        "mean_hr": mean_hr,
+        "mean_ppi": mean_ppi,
+        "rmssd": rmssd,
+        "sdnn": sdnn
+    lient.publish("hr-data", request)
+
 
 # === Menu functionality ===
 class InterruptButton:
@@ -314,6 +328,7 @@ def HRVAnalysis():
     rmssd = (1 / (len(ppi) - 1)) * rmssd
     rmssd = rmssd ** 0.5
     print(f"RMSSD: {rmssd}")
+    hr_data(id, mean_hr, mean_ppi, rmssd, sdnn)
     showResults()
     
 
@@ -328,11 +343,10 @@ def showSelection(index):
         oled.show()
         #Do stuff here
         while events.empty():
-            oled.text("Hold the sensor.", 1,20,1)
-            oled.text("Rot 1:",1,40,1)
-            oled.text("begin analysis.",1,50,1)
+            oled.text("Hold the sensor.", 1,30,1)
+            oled.text("Rot 1: begin analysis.",1,40,1)
             oled.show()
-            time.sleep(0.0001)
+            time.sleep(0.01)
         events.get()
         HRVAnalysis()
         time.sleep(1)
@@ -372,12 +386,9 @@ def showResults():
         oled.text("Mean PPI: " + str(int(mean_ppi)), 1, 10, 1)
         oled.text("RMSSD: " + str(int(rmssd)), 1, 20, 1)
         oled.text("SDNN: " + str(int(sdnn)), 1, 30, 1)
-        while events.empty():
-            oled.text("Press button", 1, 40, 1)
-            oled.text("to continue:", 1, 50, 1)
-            oled.show()
-            time.sleep(0.0001)
-        events.get()
+        oled.text("Press button to continue:", 1, 40, 1)
+        oled.show()
+        time.sleep(1)
 
 # === "Main loop" ===
 while True:
