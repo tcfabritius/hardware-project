@@ -305,7 +305,6 @@ def HRVAnalysis():
 
     tmr.deinit()
     kubios_requests(id, ppi)
-    global id
     id += 1
     total = 0
     for pi in ppi:
@@ -329,6 +328,7 @@ def HRVAnalysis():
     rmssd = rmssd ** 0.5
     print(f"RMSSD: {rmssd}")
     hr_data(id, mean_hr, mean_ppi, rmssd, sdnn)
+    global id
     showResults()
     
 
