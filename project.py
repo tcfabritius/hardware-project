@@ -345,10 +345,11 @@ def showResults():
         global mainMenuActive
         mainMenuActive = False
         oled.fill(0)
-        oled.text("Mean HR:"+str(mean_hr), 1, 1, 1)
-        oled.text("Mean PPI:"+str(mean_ppi), 1, 10, 1)
-        oled.text("RMSSD:"+str(rmssd), 1, 20, 1)
-        oled.text("SDNN:"+str(sdnn), 1, 30, 1)
+        oled.text("Mean HR: " + str(int(mean_hr)), 1, 1, 1)
+        oled.text("Mean PPI: " + str(int(mean_ppi)), 1, 10, 1)
+        oled.text("RMSSD: " + str(int(rmssd)), 1, 20, 1)
+        oled.text("SDNN: " + str(int(sdnn)), 1, 30, 1)
+        oled.text("Press button to continue:", 1, 40, 1)
         oled.show()
         time.sleep(1)
 
