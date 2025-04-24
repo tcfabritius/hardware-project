@@ -6,7 +6,37 @@ from machine import Pin, ADC, I2C
 from fifo import Fifo
 import time
 import micropython
+import mip
+import network
+from time import sleep
+
+
 micropython.alloc_emergency_exception_buf(200)
+
+
+# Replace these values with your own
+SSID = "KMD657_Group_4"
+PASSWORD = "TattiVanukas365#"
+BROKER_IP = "192.168.4.253"
+
+# Function to connect to WLAN
+def connect_wlan():
+    # Connecting to the group WLAN
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+    wlan.connect(SSID, PASSWORD)
+
+    # Attempt to connect once per second
+    while wlan.isconnected() == False:
+        print("Connecting... ")
+        sleep(1)
+
+    # Print the IP address of the Pico
+    print("Connection successful. Pico IP:", wlan.ifconfig()[0])
+
+# Main program
+connect_wlan()
+
 
 # === Menu and OLED ===
 menuItems = [
