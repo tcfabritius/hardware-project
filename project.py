@@ -265,9 +265,6 @@ def HRVAnalysis():
     rmssd = (1 / (len(ppi) - 1)) * rmssd
     rmssd = rmssd ** 0.5
     print(f"RMSSD: {rmssd}")
-    #print to oled
-    calcValues = f"MPPI:{mean_ppi}\nMHR:{mean_hr}\nSDNN:{sdnn}\nRMSSD:{rmssd}\nR1 - Exit"
-    oled.text(calcValues,1,5,1)
 
 def showSelection(index):
 # Static if-structure
@@ -275,9 +272,16 @@ def showSelection(index):
         global mainMenuActive
         mainMenuActive = False
         oled.fill(0)
-        oled.text("Measure HR----------", 1, 1, 1)
-        oled.text("Rot 1: Exit.", 1, 20, 1)
+        oled.text("Measure HR----------",1,1,1)
+        #oled.text("Rot 1: Exit.", 1, 20, 1)
         oled.show()
+        #Do stuff here
+        while events.empty():
+            oled.text("Hold the sensor.", 1,30,1)
+            oled.text("Rot 1: begin analysis.",1,40,1)
+            oled.show()
+            time.sleep(0.01)
+        events.get()
         HRVAnalysis()
         time.sleep(1)
         
