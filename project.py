@@ -324,6 +324,8 @@ def HRVAnalysis():
     print(f"RMSSD: {rmssd}")
     hr_data(id, mean_hr, mean_ppi, rmssd, sdnn)
     global id
+    x = 1
+    y = 0
     showResults()
     
 
