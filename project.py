@@ -12,11 +12,7 @@ from time import sleep
 from umqtt.simple import MQTTClient
 import json
 
-
-
-
 micropython.alloc_emergency_exception_buf(200)
-
 
 # Replace these values with your own
 SSID = "KMD657_Group_4"
@@ -41,11 +37,9 @@ def connect_wlan():
 # Main program
 connect_wlan()
 
-
 # === Menu and OLED ===
 menuItems = [
     "Measure HRV",
-    "HRV Analysis",
     "Kubios Cloud",
     "History"
 ]
@@ -90,7 +84,6 @@ GRAPH_HEIGHT = 64
 GRAPH_WIDTH = 128
 id = 1
 y_values = [GRAPH_HEIGHT // 2] * GRAPH_WIDTH
-
 client = MQTTClient("timf", BROKER_IP, port=21883)
 
 def kubios_request(id, data):
@@ -352,17 +345,8 @@ def showSelection(index):
         events.get()
         HRVAnalysis()
         time.sleep(1)
-        
+
     elif index == 1:
-        global mainMenuActive
-        mainMenuActive = False
-        oled.fill(0)
-        oled.text("HRV Analysis----------", 1, 1, 1)
-        oled.text("Rot 1: Exit.", 1, 20, 1)
-        oled.show()
-        time.sleep(1)
-    
-    elif index == 2:
         global mainMenuActive
         mainMenuActive = False
         oled.fill(0)
@@ -371,7 +355,7 @@ def showSelection(index):
         oled.show()
         time.sleep(1)
     
-    elif index == 3:
+    elif index == 2:
         global mainMenuActive
         mainMenuActive = False
         oled.fill(0)
