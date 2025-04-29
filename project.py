@@ -411,7 +411,8 @@ def showResults():
             oled.text("Rot 1: continue:", 1, 50, 1)
             oled.show()
             time.sleep(0.0001)
-        events.get()
+        #events.get()
+
 
 # === "Main loop" ===
 while True:
