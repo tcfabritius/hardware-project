@@ -35,7 +35,7 @@ def connect_wlan():
     print("Connection successful. Pico IP:", wlan.ifconfig()[0])
 
 # Main program
-connect_wlan()
+#connect_wlan()
 
 # === Menu and OLED ===
 menuItems = [
@@ -242,7 +242,14 @@ def HRVAnalysis():
     samples = isr_fifo(750, 27)
     tmr = Piotimer(period=10, freq=250, mode=Piotimer.PERIODIC, callback=samples.handler)
     #Timer
-    while y < 500:
+    while y < 500 and events.empty():
+        if events.has_data():
+            event = events.get()
+            if event == 0:
+                mainMenuActive = True
+                updateMenu()
+                tmr.deinit()
+        
         if not samples.empty():
             number = samples.get()
             if number < minV:
@@ -256,7 +263,13 @@ def HRVAnalysis():
             maxV = 0
             y += 1
 
-    while x < 7500:        
+    while x < 7500 and events.empty():
+        if events.has_data():
+            event = events.get()
+            if event == 0:
+                mainMenuActive = True
+                updateMenu()
+            
         if not samples.empty():
             if x % 500 == 0:
                 number = samples.get()
@@ -274,6 +287,7 @@ def HRVAnalysis():
                 if number > maxV:
                     maxV = number
             signal_graph(number, x)
+            
             if number - last < 0 and first_occurrence and number > average and number != 0:
                 peak = x
                 first_occurrence = False
@@ -286,9 +300,10 @@ def HRVAnalysis():
                         interval = interval / 250
                         ppi.append(interval * 1000)
                         global bpm
-                        bpm = int(60 / interval)
-                        if 30 <= bpm <= 240:
-                            hr.append(bpm)
+                        if interval != 0:
+                            bpm = int(60 / interval)
+                            if 30 <= bpm <= 240:
+                                hr.append(bpm)
                             
             last_peak = peak
             last = number
@@ -298,35 +313,52 @@ def HRVAnalysis():
                 oled.show()  
 
     tmr.deinit()
-    global id
-    kubios_request(id, ppi)
-    id += 1
-    total = 0
-    for pi in ppi:
-        total = total + pi
-    mean_ppi = total / len(ppi)
-    print(f"Mean PPI: {mean_ppi}")
+    if len(ppi) > 0:
+        global id
+        #kubios_request(id, ppi)
+        id += 1
+        total = 0
+        for pi in ppi:
+            total = total + pi
+        
+        mean_ppi = total / len(ppi)
 
-    total = 0
-    for h in hr:
-        total = total + h
-    mean_hr = total / len(hr)
-    print(f"Mean HR: {mean_hr}")
-    for pi in ppi:
-        sdnn = sdnn + (pi - mean_ppi) ** 2
-    sdnn = (1 / (len(ppi) - 1)) * sdnn
-    sdnn = sdnn ** 0.5
-    print(f"SDNN: {sdnn}")
-    for r in range(len(ppi) - 1):
-        rmssd = rmssd + (ppi[r + 1] - ppi[r]) ** 2
-    rmssd = (1 / (len(ppi) - 1)) * rmssd
-    rmssd = rmssd ** 0.5
-    print(f"RMSSD: {rmssd}")
-    hr_data(id, mean_hr, mean_ppi, rmssd, sdnn)
-    global id
-    x = 1
-    y = 0
-    showResults()
+        total = 0
+        for h in hr:
+            total = total + h
+        
+        if len(hr) > 0:
+            mean_hr = total / len(hr)
+        
+        for pi in ppi:
+            sdnn = sdnn + (pi - mean_ppi) ** 2
+        
+        sdnn = (1 / (len(ppi) - 1)) * sdnn
+        sdnn = sdnn ** 0.5
+        
+        for r in range(len(ppi) - 1):
+            rmssd = rmssd + (ppi[r + 1] - ppi[r]) ** 2
+        rmssd = (1 / (len(ppi) - 1)) * rmssd
+        rmssd = rmssd ** 0.5
+        
+        if x == 7499:
+            print(f"Mean PPI: {mean_ppi}")
+            print(f"Mean HR: {mean_hr}")
+            print(f"SDNN: {sdnn}")
+            print(f"RMSSD: {rmssd}")
+        else:
+            oled.fill(0)
+            oled.text("Interrupted", 1, 20, 1)
+            oled.show()
+            x = 1
+            y = 0
+            
+        
+        #hr_data(id, mean_hr, mean_ppi, rmssd, sdnn)
+        global id
+        x = 1
+        y = 0
+        showResults()
     
 
 def showSelection(index):
@@ -374,9 +406,11 @@ def showResults():
         oled.text("Mean PPI: " + str(int(mean_ppi)), 1, 10, 1)
         oled.text("RMSSD: " + str(int(rmssd)), 1, 20, 1)
         oled.text("SDNN: " + str(int(sdnn)), 1, 30, 1)
-        oled.text("Press button to continue:", 1, 40, 1)
-        oled.show()
-        time.sleep(1)
+        while events.empty():
+            oled.text("Rot 1: continue:", 1, 50, 1)
+            oled.show()
+            time.sleep(0.0001)
+        events.get()
 
 # === "Main loop" ===
 while True:
