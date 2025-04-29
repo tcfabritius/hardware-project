@@ -237,7 +237,7 @@ def HRVAnalysis():
     global x, y, last, last_peak, peak, first_occurrence
     global hr, mean_hr, ppi, mean_ppi, rmssd, sdnn
     global minV, maxV
-    print("Time to do some measurements woohoo")
+    #print("Time to do some measurements woohoo")
     # === Sample fifo instantiation ===
     samples = isr_fifo(750, 27)
     tmr = Piotimer(period=10, freq=250, mode=Piotimer.PERIODIC, callback=samples.handler)
@@ -349,6 +349,7 @@ def HRVAnalysis():
         else:
             oled.fill(0)
             oled.text("Interrupted", 1, 20, 1)
+            oled.text("Rot 1: Exit", 1, 30, 1)
             oled.show()
             x = 1
             y = 0
@@ -373,7 +374,7 @@ def showSelection(index):
         #Do stuff here
         while events.empty():
             oled.text("Hold the sensor.", 1,30,1)
-            oled.text("Rot 1: begin analysis.",1,40,1)
+            oled.text("Rot 1: Start",1,40,1)
             oled.show()
             time.sleep(0.01)
         events.get()
