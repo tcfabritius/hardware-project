@@ -35,19 +35,24 @@ def connect_wlan():
     print("Connection successful. Pico IP:", wlan.ifconfig()[0])
 
 # Main program
-#connect_wlan()
+connect_wlan()
 
 # === Menu and OLED ===
-menuItems = [
+mItems = [
     "Measure HRV",
     "Kubios Cloud",
     "History"
 ]
-menuIndex = 0
+mIndex = 0
 events = Fifo(30)
 i2c = I2C(1, scl=Pin(15), sda=Pin(14), freq=400000)
 oled = SSD1306_I2C(128, 64, i2c)
 mainMenuActive = True
+
+# === History ===
+historyIndex = 0
+menuState = "main"
+history_menu = ["Log 1", "Log 2", "Log 3", "Exit"]
 
 # === Pulse Sensor Setup ===
 pulse = ADC(27)
@@ -163,24 +168,61 @@ def draw_bitmap(oled, bitmap, x, y):
 def updateMenu():
     oled.fill(0)
     oled.text("MAIN----------", 1, 1, 1)
-    menuLength = len(menuItems)
+    menuLength = len(mItems)
 
     for j in range(menuLength):
-        if j == menuIndex:
+        if j == mIndex:
             draw_bitmap(oled, heart_bitmap, 1, (j+1)*13)
         else:
             oled.text(" ", 1, (j+1)*13, 1)
 
-        main = f"{j+1}. {menuItems[j]}"
+        main = f"{j+1}. {mItems[j]}"
         oled.text(main, 10, (j+1)*13, 1)
 
     oled.show()
+
+def historyMenu():
+    global historyIndex, mainMenuActive, menuState
+
+    oled.fill(0)
+    oled.text("HISTORY---------", 1, 1, 1)
+
+    # Näytä valikkokohtia
+    for i, item in enumerate(history_menu):
+        prefix = "> " if i == historyIndex else "  "
+        oled.text(prefix + item, 1, 15 + i * 10)
+
+    oled.show()
+
+    while menuState == "history":
+        # Pyörittimen käsittely
+        if rotFifo.has_data():
+            while rotFifo.has_data():
+                historyIndex = (historyIndex + rotFifo.get()) % len(history_menu)
+            oled.fill(0)
+            oled.text("HISTORY---------", 1, 1, 1)
+            for i, item in enumerate(history_menu):
+                prefix = "> " if i == historyIndex else "  "
+                oled.text(prefix + item, 1, 15 + i * 10)
+            oled.show()
+
+        # Napin painallus
+        if events.has_data():
+            event = events.get()
+            if event == 0:
+                if historyIndex == len(history_menu) - 1:  # Exit
+                    menuState = "main"
+                    mainMenuActive = True
+                    updateMenu()
+                    return
+                else:
+                    showSelection(historyIndex, 3)  # Historialogin tarkastelu
 
 rotFifo = Fifo(30, typecode='i')
 rot = Encoder(10, 11, rotFifo)
 button = InterruptButton(12, events)
 updateMenu()
-  
+
 # === HRV-Functionality ===
 # subclass Fifo to add handler that can be registered as timer callback
 class isr_fifo(Fifo):
@@ -315,7 +357,8 @@ def HRVAnalysis():
     tmr.deinit()
     if len(ppi) > 0:
         global id
-        #kubios_request(id, ppi)
+        #Kubios request here, maybe should be happening in kubios-menu?
+        kubios_request(id, ppi)
         id += 1
         total = 0
         for pi in ppi:
@@ -348,56 +391,90 @@ def HRVAnalysis():
             print(f"RMSSD: {rmssd}")
         else:
             oled.fill(0)
-            oled.text("Interrupted", 1, 20, 1)
-            oled.text("Rot 1: Exit", 1, 30, 1)
+            oled.text("Interrupted.", 1, 20, 1)
+            oled.text("Wait.", 1, 30, 1)
             oled.show()
             x = 1
             y = 0
             
-        
-        #hr_data(id, mean_hr, mean_ppi, rmssd, sdnn)
+        #History operation here
+        hr_data(id, mean_hr, mean_ppi, rmssd, sdnn)
         global id
         x = 1
         y = 0
         showResults()
     
-
-def showSelection(index):
-# Static if-structure
-    if index == 0:
-        global mainMenuActive
-        mainMenuActive = False
-        oled.fill(0)
-        oled.text("Measure HR----------",1,1,1)
-        #oled.text("Rot 1: Exit.", 1, 20, 1)
-        oled.show()
-        #Do stuff here
-        while events.empty():
-            oled.text("Hold the sensor.", 1,30,1)
-            oled.text("Rot 1: Start",1,40,1)
+def showSelection(index, selectionType):
+    if selectionType == 0:
+        # Static if-structure
+        if index == 0:
+            global mainMenuActive
+            mainMenuActive = False
+            oled.fill(0)
+            oled.text("Measure HR----------",1,1,1)
+            #oled.text("Rot 1: Exit.", 1, 20, 1)
             oled.show()
-            time.sleep(0.01)
-        events.get()
-        HRVAnalysis()
-        time.sleep(1)
+            while events.empty():
+                oled.text("Hold the sensor.", 1,30,1)
+                oled.text("Rot 1: Start",1,40,1)
+                oled.show()
+                time.sleep(0.01)
+            events.get()
+            HRVAnalysis()
+            #time.sleep(1)
 
-    elif index == 1:
-        global mainMenuActive
-        mainMenuActive = False
-        oled.fill(0)
-        oled.text("Kubios Cloud----------", 1, 1, 1)
-        oled.text("Rot 1: Exit.", 1, 20, 1)
-        oled.show()
-        time.sleep(1)
-    
-    elif index == 2:
-        global mainMenuActive
-        mainMenuActive = False
-        oled.fill(0)
-        oled.text("History----------", 1, 1, 1)
-        oled.text("Rot 1: Exit.", 1, 20, 1)
-        oled.show()
-        time.sleep(1)
+        elif index == 1:
+            global mainMenuActive
+            mainMenuActive = False
+            oled.fill(0)
+            oled.text("Kubios Cloud----------", 1, 1, 1)
+            oled.text("Rot 1: Exit.", 1, 20, 1)
+            oled.show()
+            #time.sleep(1)
+        
+        elif index == 2:
+            global mainMenuActive, menuState
+            mainMenuActive = False
+            menuState = "history"
+            historyMenu()
+            
+    elif selectionType == 3:
+        #History
+        if index == 0:
+            global mainMenuActive
+            mainMenuActive = False
+            oled.fill(0)
+            #For some reason only rotating the rotary takes the user back, rather than press.
+            while events.empty():
+                oled.text("Log 1----------",1,1,1)
+                oled.text("Rot 1: Exit.", 1, 20, 1)
+                oled.show()
+            events.get()
+            #time.sleep(1)
+
+        elif index == 1:
+            global mainMenuActive
+            mainMenuActive = False
+            oled.fill(0)
+            #For some reason only rotating the rotary takes the user back, rather than press.
+            while events.empty():
+                oled.text("Log 2----------", 1, 1, 1)
+                oled.text("Rot 1: Exit.", 1, 20, 1)
+                oled.show()
+            events.get()
+            #time.sleep(1)
+        
+        elif index == 2:
+            global mainMenuActive
+            mainMenuActive = False
+            oled.fill(0)
+            #For some reason only rotating the rotary takes the user back, rather than press.
+            while events.empty():
+                oled.text("Log 3----------", 1, 1, 1)
+                oled.text("Rot 1: Exit.", 1, 20, 1)
+                oled.show()
+            events.get()
+            #time.sleep(1)
 
 def showResults():
         global mainMenuActive
@@ -413,21 +490,26 @@ def showResults():
             time.sleep(0.0001)
         #events.get()
 
-
 # === "Main loop" ===
 while True:
     if mainMenuActive:
         #Navigation
         if rotFifo.has_data():
             while rotFifo.has_data():
-                menuIndex = (menuIndex + rotFifo.get()) % len(menuItems)
+                mIndex = (mIndex + rotFifo.get()) % len(mItems)
+                #This variable can be used to detect which option we are hovering in
+                #print(mIndex)
             updateMenu()
+            if mainMenuActive == False:
+                updateMenu()
 
         #On menu
         if events.has_data():
             event = events.get()
             if event == 0:
-                showSelection(menuIndex)
+                showSelection(mIndex, 0)
+            elif event == 2:
+                showSelection(hIndex, 3)
     else:
         while rotFifo.has_data():
             rotFifo.get()
@@ -438,4 +520,5 @@ while True:
             if event == 0:
                 mainMenuActive = True
                 updateMenu()
+
 
