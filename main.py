@@ -373,10 +373,10 @@ def HRVAnalysis():
             client.subscribe(b"kubios-response")
             client.wait_msg()
             data_dict = json.loads(mqtt_data)  # Convert string to dictionary
-            kubiosCloud(data_dict)
+            kubiosCloud(data_dict, id)
+            id += 1
             
         if mIndex == 0:
-            id += 1
             total = 0
             for pi in ppi:
                 total = total + pi
@@ -420,6 +420,7 @@ def HRVAnalysis():
             x = 1
             y = 0
             showResults()
+            id += 1
         
 def showSelection(index, selectionType):
     if selectionType == 0:
@@ -472,8 +473,9 @@ def showSelection(index, selectionType):
             while events.empty():
                 oled.text("Log 1----------",1,1,1)
                 oled.text("Rot 1: Exit.", 1, 20, 1)
-                oled.show()
+             #   oled.show()
             events.get()
+            printHistory(index)
             #time.sleep(1)
 
         elif index == 1:
@@ -484,8 +486,9 @@ def showSelection(index, selectionType):
             while events.empty():
                 oled.text("Log 2----------", 1, 1, 1)
                 oled.text("Rot 1: Exit.", 1, 20, 1)
-                oled.show()
+              #  oled.show()
             events.get()
+            printHistory(index)        
             #time.sleep(1)
         
         elif index == 2:
@@ -498,6 +501,7 @@ def showSelection(index, selectionType):
                 oled.text("Rot 1: Exit.", 1, 20, 1)
                 oled.show()
             events.get()
+            printHistory(index)        
             #time.sleep(1)
 
 def showResults():
@@ -514,7 +518,7 @@ def showResults():
             time.sleep(0.0001)
         #events.get()
             
-def kubiosCloud(json):
+def kubiosCloud(json, id):
     analysis = json['data']['analysis']
 
     kubios_mean_hr = int(analysis.get("mean_hr_bpm", 0))
@@ -533,6 +537,31 @@ def kubiosCloud(json):
     oled.text("SNS index: " + str(kubios_sns_index), 0, 50)
     oled.show()    
 
+    id =str(id)
+    id = id + ".txt"
+    with open(id, 'w') as file:
+        file.write(
+            "Mean HR: " + str(kubios_mean_hr) + "\n"
+            "Mean PPI: " + str(kubios_mean_rr_ms) + "\n"
+            "SDNN: " + str(kubios_sdnn) + "\n"
+            "RMSSD: " + str(kubios_rmssd) + "\n"
+            "PNS index: " + str(kubios_pns_index) + "\n"
+            "SNS index: " + str(kubios_sns_index) + "\n"
+        )
+        
+def printHistory(id):
+    oled.fill(0)
+    show_y = 0
+    id += 1
+    id =str(id)
+    id = id + ".txt"
+    with open(id, 'r') as file:
+        for line in file:
+            oled.text(line.strip(),0, show_y)
+            show_y += 10
+    oled.show()
+    time.sleep(1)
+                
 # === "Main loop" ===
 while True:
     if mainMenuActive:
