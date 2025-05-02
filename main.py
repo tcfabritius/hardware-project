@@ -87,9 +87,17 @@ sdnn = 0
 lastX = 0
 GRAPH_HEIGHT = 64
 GRAPH_WIDTH = 128
+mqtt_data = b''
 id = 1
 y_values = [GRAPH_HEIGHT // 2] * GRAPH_WIDTH
 client = MQTTClient("timf", BROKER_IP, port=21883)
+data_bytes = b''
+
+def sub_cb(topic, msg):
+    global mqtt_data
+    mqtt_data = msg.decode("utf-8")  # Decode only the message part, not the tuple
+    
+client.set_callback(sub_cb)
 
 def kubios_request(id, data):
     client.connect()
@@ -358,52 +366,61 @@ def HRVAnalysis():
     if len(ppi) > 0:
         global id
         #Kubios request here, maybe should be happening in kubios-menu?
-        kubios_request(id, ppi)
-        id += 1
-        total = 0
-        for pi in ppi:
-            total = total + pi
-        
-        mean_ppi = total / len(ppi)
+        if mIndex == 1:
+            kubios_request(id, ppi)
+            
+            client.connect()
+            client.subscribe(b"kubios-response")
+            client.wait_msg()
+            data_dict = json.loads(mqtt_data)  # Convert string to dictionary
+            kubiosCloud(data_dict)
+            
+        if mIndex == 0:
+            id += 1
+            total = 0
+            for pi in ppi:
+                total = total + pi
+            
+            mean_ppi = total / len(ppi)
 
-        total = 0
-        for h in hr:
-            total = total + h
-        
-        if len(hr) > 0:
-            mean_hr = total / len(hr)
-        
-        for pi in ppi:
-            sdnn = sdnn + (pi - mean_ppi) ** 2
-        
-        sdnn = (1 / (len(ppi) - 1)) * sdnn
-        sdnn = sdnn ** 0.5
-        
-        for r in range(len(ppi) - 1):
-            rmssd = rmssd + (ppi[r + 1] - ppi[r]) ** 2
-        rmssd = (1 / (len(ppi) - 1)) * rmssd
-        rmssd = rmssd ** 0.5
-        
-        if x == 7499:
-            print(f"Mean PPI: {mean_ppi}")
-            print(f"Mean HR: {mean_hr}")
-            print(f"SDNN: {sdnn}")
-            print(f"RMSSD: {rmssd}")
-        else:
-            oled.fill(0)
-            oled.text("Interrupted.", 1, 20, 1)
-            oled.text("Wait.", 1, 30, 1)
-            oled.show()
+            total = 0
+            for h in hr:
+                total = total + h
+            
+            if len(hr) > 0:
+                mean_hr = total / len(hr)
+            
+            for pi in ppi:
+                sdnn = sdnn + (pi - mean_ppi) ** 2
+            
+            sdnn = (1 / (len(ppi) - 1)) * sdnn
+            sdnn = sdnn ** 0.5
+            
+            for r in range(len(ppi) - 1):
+                rmssd = rmssd + (ppi[r + 1] - ppi[r]) ** 2
+            rmssd = (1 / (len(ppi) - 1)) * rmssd
+            rmssd = rmssd ** 0.5
+            
+            if x == 7499:
+                print(f"Mean PPI: {mean_ppi}")
+                print(f"Mean HR: {mean_hr}")
+                print(f"SDNN: {sdnn}")
+                print(f"RMSSD: {rmssd}")
+            else:
+                oled.fill(0)
+                oled.text("Interrupted.", 1, 20, 1)
+                oled.text("Wait.", 1, 30, 1)
+                oled.show()
+                x = 1
+                y = 0
+                
+            #History operation here
+            hr_data(id, mean_hr, mean_ppi, rmssd, sdnn)
+            global id
             x = 1
             y = 0
-            
-        #History operation here
-        hr_data(id, mean_hr, mean_ppi, rmssd, sdnn)
-        global id
-        x = 1
-        y = 0
-        showResults()
-    
+            showResults()
+        
 def showSelection(index, selectionType):
     if selectionType == 0:
         # Static if-structure
@@ -430,6 +447,13 @@ def showSelection(index, selectionType):
             oled.text("Kubios Cloud----------", 1, 1, 1)
             oled.text("Rot 1: Exit.", 1, 20, 1)
             oled.show()
+            while events.empty():
+                oled.text("Hold the sensor.", 1,30,1)
+                oled.text("Rot 1: Start",1,40,1)
+                oled.show()
+                time.sleep(0.01)
+            events.get()
+            HRVAnalysis()
             #time.sleep(1)
         
         elif index == 2:
@@ -489,6 +513,25 @@ def showResults():
             oled.show()
             time.sleep(0.0001)
         #events.get()
+            
+def kubiosCloud(json):
+    analysis = json['data']['analysis']
+
+    kubios_mean_hr = int(analysis.get("mean_hr_bpm", 0))
+    kubios_mean_rr_ms = int(analysis.get("mean_rr_ms", 0))
+    kubios_rmssd = int(analysis.get("rmssd_ms", 0))
+    kubios_sdnn = int(analysis.get("sdnn_ms", 0))
+    kubios_pns_index = int(analysis.get("pns_index", 0))
+    kubios_sns_index = int(analysis.get("sns_index", 0))
+
+    oled.fill(0)
+    oled.text("Mean HR: " + str(kubios_mean_hr), 0, 0)
+    oled.text("Mean PPI: " + str(kubios_mean_rr_ms), 0, 10)
+    oled.text("SDNN: " + str(kubios_sdnn), 0, 20)    
+    oled.text("RMSSD: " + str(kubios_rmssd), 0, 30)
+    oled.text("PNS index: " + str(kubios_pns_index), 0, 40)    
+    oled.text("SNS index: " + str(kubios_sns_index), 0, 50)
+    oled.show()    
 
 # === "Main loop" ===
 while True:
