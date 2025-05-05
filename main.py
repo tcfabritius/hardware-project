@@ -110,7 +110,7 @@ def kubios_request(id, data):
     client.publish("kubios-request", json.dumps(request))
     client.disconnect()
     
-def hr_data(id, mean_hr, mean_ppi, rmssd, sdnn):
+def hr_data(id, mean_hr, mean_ppi, rmssd, sdnn, sns, pns):
     client.connect()
     current_time = time.localtime()
     request = {
@@ -119,7 +119,9 @@ def hr_data(id, mean_hr, mean_ppi, rmssd, sdnn):
         "mean_hr": mean_hr,
         "mean_ppi": mean_ppi,
         "rmssd": rmssd,
-        "sdnn": sdnn
+        "sdnn": sdnn,
+        "sns": sns,
+        "pns": pns
         }
     client.publish("hr-data", json.dumps(request))
     client.disconnect()
@@ -415,7 +417,7 @@ def HRVAnalysis():
                 y = 0
                 
             #History operation here
-            hr_data(id, mean_hr, mean_ppi, rmssd, sdnn)
+
             global id
             x = 1
             y = 0
@@ -535,7 +537,9 @@ def kubiosCloud(json, id):
     oled.text("RMSSD: " + str(kubios_rmssd), 0, 30)
     oled.text("PNS index: " + str(kubios_pns_index), 0, 40)    
     oled.text("SNS index: " + str(kubios_sns_index), 0, 50)
-    oled.show()    
+    oled.show()
+
+    hr_data(id, kubios_mean_hr, kubios_mean_rr_ms, kubios_rmssd, kubios_sdnn, kubios_sns_index, kubios_pns_index)
 
     id =str(id)
     id = id + ".txt"
