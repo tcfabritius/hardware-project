@@ -36,9 +36,6 @@ def connect_wlan():
     print("Connection successful. Pico IP:", wlan.ifconfig()[0])
 
 
-# Main program
-connect_wlan()
-
 # === Menu and OLED ===
 mItems = [
     "Measure HRV",
@@ -66,9 +63,6 @@ samplegraph = []
 samplesum = 0
 sampleavg = 0
 averageG = 0
-yG = 0
-minGV = 0
-maxGV = 0
 sample_index = 1
 threshold = 0
 signal_min = 65535
@@ -211,9 +205,7 @@ def historyMenu():
     for i, item in enumerate(history_menu):
         prefix = "> " if i == historyIndex else "  "
         oled.text(prefix + item, 1, 15 + i * 10)
-
     oled.show()
-
     while menuState == "history":
         # Pyörittimen käsittely
         if rotFifo.has_data():
@@ -381,6 +373,9 @@ def HRVAnalysis():
     if len(ppi) > 0:
         # Kubios request here, maybe should be happening in kubios-menu?
         if mIndex == 1:
+            #Connecting to internet here
+            connect_wlan()
+            #Expanded logic here
             kubios_request(id, ppi)
             client.connect()
             client.subscribe(b"kubios-response")
@@ -464,45 +459,62 @@ def showSelection(index, selectionType):
             historyMenu()
 
     elif selectionType == 3:
-        # History
+        #History
         if index == 0:
             global mainMenuActive
-            mainMenuActive = False
-            oled.fill(0)
-            # For some reason only rotating the rotary takes the user back, rather than press.
-            while events.empty():
-                oled.text("Log 1----------", 1, 1, 1)
-                oled.text("Rot 1: Exit.", 1, 20, 1)
-            #   oled.show()
-            events.get()
-            printHistory(index)
-            # time.sleep(1)
+            global hasData
+            hasData = False
+            if hasData == True:
+                mainMenuActive = False
+                oled.fill(0)
+                #For some reason only rotating the rotary takes the user back, rather than press.
+                while events.empty():
+                    oled.text("Log 1----------",1,1,1)
+                    oled.text("Rot 1: Exit.", 1, 20, 1)
+                    printHistory(index)
+                events.get()
+            else:
+                oled.fill(0)
+                oled.text("Log 2----------", 1, 1, 1)
+                oled.text("No data yet.", 1, 20, 1)
+                oled.text("Rot 1: Exit.", 1, 30, 1)
+                oled.show()
 
         elif index == 1:
             global mainMenuActive
             mainMenuActive = False
-            oled.fill(0)
-            # For some reason only rotating the rotary takes the user back, rather than press.
-            while events.empty():
+            global hasData
+            hasData = False
+            if hasData == True:
+                oled.fill(0)
+                #For some reason only rotating the rotary takes the user back, rather than press.
+                while events.empty():
+                    printHistory(index) 
+                events.get()
+            else:
+                oled.fill(0)
                 oled.text("Log 2----------", 1, 1, 1)
-                oled.text("Rot 1: Exit.", 1, 20, 1)
-            #  oled.show()
-            events.get()
-            printHistory(index)
-            # time.sleep(1)
-
+                oled.text("No data yet.", 1, 20, 1)
+                oled.text("Rot 1: Exit.", 1, 30, 1)
+                oled.show()
+        
         elif index == 2:
             global mainMenuActive
             mainMenuActive = False
-            oled.fill(0)
-            # For some reason only rotating the rotary takes the user back, rather than press.
-            while events.empty():
+            global hasData
+            hasData = False
+            if hasData == True:
+                oled.fill(0)
+                #For some reason only rotating the rotary takes the user back, rather than press.
+                while events.empty():
+                    printHistory(index)
+                events.get()
+            else:
+                oled.fill(0)
                 oled.text("Log 3----------", 1, 1, 1)
-                oled.text("Rot 1: Exit.", 1, 20, 1)
+                oled.text("No data yet.", 1, 20, 1)
+                oled.text("Rot 1: Exit.", 1, 30, 1)
                 oled.show()
-            events.get()
-            printHistory(index)
-            # time.sleep(1)
 
 
 def showResults():
@@ -546,15 +558,12 @@ def kubiosCloud(json, id):
     with open(id, 'w') as file:
         file.write(
             "Mean HR: " + str(kubios_mean_hr) + "\n"
-                                                "Mean PPI: " + str(kubios_mean_rr_ms) + "\n"
-                                                                                        "SDNN: " + str(
-                kubios_sdnn) + "\n"
-                               "RMSSD: " + str(kubios_rmssd) + "\n"
-                                                               "PNS index: " + str(kubios_pns_index) + "\n"
-                                                                                                       "SNS index: " + str(
-                kubios_sns_index) + "\n"
-        )
-
+            "Mean PPI: " + str(kubios_mean_rr_ms) + "\n"
+            "SDNN: " + str(kubios_sdnn) + "\n"
+            "RMSSD: " + str(kubios_rmssd) + "\n"
+            "PNS index: " + str(kubios_pns_index) + "\n"
+            "SNS index: " + str(kubios_sns_index) + "\n"
+            )
 
 def printHistory(id):
     oled.fill(0)
