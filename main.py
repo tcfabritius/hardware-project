@@ -61,16 +61,38 @@ pulse = ADC(27)
 led = Pin(25, Pin.OUT)
 
 # === HRV-variables ===
-bpm = samplesum = sampleavg = averageG = yG = threshold = signal_max = last_sample_signal = last_peak_index = peak_index = sample_signal = init_sample_index = mean_hr = mean_ppi = rmssd = sdnn = last_sample_index = 0
-samplegraph = hr = ppi = []
-sample_index = id = 1
+bpm = 0
+samplegraph = []
+samplesum = 0
+sampleavg = 0
+averageG = 0
+yG = 0
+minGV = 0
+maxGV = 0
+sample_index = 1
+threshold = 0
 signal_min = 65535
+signal_max = 0
 first_occurrence = True
-GRAPH_HEIGHT, GRAPH_WIDTH = 64, 128
-mqtt_data = data_bytes = b''
+last_sample_signal = 0
+last_peak_index = 0
+peak_index = 0
+sample_signal = 0
+init_sample_index = 0
+hr = []
+mean_hr = 0
+ppi = []
+mean_ppi = 0
+rmssd = 0
+sdnn = 0
+last_sample_index = 0
+GRAPH_HEIGHT = 64
+GRAPH_WIDTH = 128
+mqtt_data = b''
+id = 1
 y_values = [GRAPH_HEIGHT // 2] * GRAPH_WIDTH
 client = MQTTClient("timf", BROKER_IP, port=21883)
-
+data_bytes = b''
 
 def sub_cb(topic, msg):
     global mqtt_data
