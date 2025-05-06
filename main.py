@@ -19,6 +19,7 @@ SSID = "KMD657_Group_4"
 PASSWORD = "TattiVanukas365#"
 BROKER_IP = "192.168.4.253"
 
+
 # Function to connect to WLAN
 def connect_wlan():
     # Connecting to the group WLAN
@@ -33,6 +34,7 @@ def connect_wlan():
 
     # Print the IP address of the Pico
     print("Connection successful. Pico IP:", wlan.ifconfig()[0])
+
 
 # Main program
 connect_wlan()
@@ -92,23 +94,27 @@ y_values = [GRAPH_HEIGHT // 2] * GRAPH_WIDTH
 client = MQTTClient("timf", BROKER_IP, port=21883)
 data_bytes = b''
 
+
 def sub_cb(topic, msg):
     global mqtt_data
     mqtt_data = msg.decode("utf-8")  # Decode only the message part, not the tuple
-    
+
+
 client.set_callback(sub_cb)
+
 
 def kubios_request(id, data):
     client.connect()
     request = {
-            "id":id,
-            "type": "RRI",
-            "data": data,
-            "analysis": { "type": "readiness" }
-        } 
+        "id": id,
+        "type": "RRI",
+        "data": data,
+        "analysis": {"type": "readiness"}
+    }
     client.publish("kubios-request", json.dumps(request))
     client.disconnect()
-    
+
+
 def hr_data(id, mean_hr, mean_ppi, rmssd, sdnn, sns, pns):
     client.connect()
     current_time = time.localtime()
@@ -121,9 +127,10 @@ def hr_data(id, mean_hr, mean_ppi, rmssd, sdnn, sns, pns):
         "sdnn": sdnn,
         "sns": sns,
         "pns": pns
-        }
+    }
     client.publish("hr-data", json.dumps(request))
     client.disconnect()
+
 
 # === Menu functionality ===
 class InterruptButton:
@@ -132,12 +139,13 @@ class InterruptButton:
         self.lastPress = time.ticks_ms()
         self.fifo = fifo
         self.button.irq(handler=self.handler, trigger=Pin.IRQ_FALLING, hard=True)
-    
+
     def handler(self, pin):
         now = time.ticks_ms()
-        if time.ticks_diff(now, self.lastPress) > 250: #250ms cooldown
+        if time.ticks_diff(now, self.lastPress) > 250:  # 250ms cooldown
             self.lastPress = now
             self.fifo.put(0)
+
 
 class Encoder:
     def __init__(self, rot_a, rot_b, fifo):
@@ -148,11 +156,12 @@ class Encoder:
 
     def handler(self, pin):
         if self.b.value():
-            #Left
+            # Left
             self.fifo.put(-1)
         else:
-            #Right
+            # Right
             self.fifo.put(1)
+
 
 # Heart bitmap 8x8 in hex
 heart_bitmap = [
@@ -163,8 +172,9 @@ heart_bitmap = [
     0x7E,  # 01111110
     0x3C,  # 00111100
     0x18,  # 00011000
-    0x00   # 00000000
+    0x00  # 00000000
 ]
+
 
 def draw_bitmap(oled, bitmap, x, y):
     for i, row in enumerate(bitmap):
@@ -174,6 +184,7 @@ def draw_bitmap(oled, bitmap, x, y):
             else:
                 oled.pixel(x + j, y + i, 0)
 
+
 def updateMenu():
     oled.fill(0)
     oled.text("MAIN----------", 1, 1, 1)
@@ -181,14 +192,15 @@ def updateMenu():
 
     for j in range(menuLength):
         if j == mIndex:
-            draw_bitmap(oled, heart_bitmap, 1, (j+1)*13)
+            draw_bitmap(oled, heart_bitmap, 1, (j + 1) * 13)
         else:
-            oled.text(" ", 1, (j+1)*13, 1)
+            oled.text(" ", 1, (j + 1) * 13, 1)
 
-        main = f"{j+1}. {mItems[j]}"
-        oled.text(main, 10, (j+1)*13, 1)
+        main = f"{j + 1}. {mItems[j]}"
+        oled.text(main, 10, (j + 1) * 13, 1)
 
     oled.show()
+
 
 def historyMenu():
     global historyIndex, mainMenuActive, menuState
@@ -227,10 +239,12 @@ def historyMenu():
                 else:
                     showSelection(historyIndex, 3)  # Historialogin tarkastelu
 
+
 rotFifo = Fifo(30, typecode='i')
 rot = Encoder(10, 11, rotFifo)
 button = InterruptButton(12, events)
 updateMenu()
+
 
 # === HRV-Functionality ===
 # subclass Fifo to add handler that can be registered as timer callback
@@ -246,6 +260,7 @@ class isr_fifo(Fifo):
         self.put(self.av.read_u16())
         self.dbg.toggle()
 
+
 def scale(value, min_val=25000, max_val=65000, height=64):
     """
     Scales the raw ADC value to fit within the OLED display height.
@@ -256,11 +271,13 @@ def scale(value, min_val=25000, max_val=65000, height=64):
     scaled = int((value - min_val) * (height - 1) / (max_val - min_val))
     return height - 1 - scaled  # Invert to match OLED top-to-bottom orientation
 
+
 def scaler(value, minVal, maxVal):
     if maxVal == minVal:
         return 32
     scaled = int((value - minVal) * 63 / (maxVal - minVal))
     return min(max(scaled, 0), 63)
+
 
 def signal_graph(val, x):
     samplegraph.append(val)
@@ -279,20 +296,20 @@ def signal_graph(val, x):
         # Draw the updated waveform
         for x in range(1, GRAPH_WIDTH):
             oled.line(x - 1, y_values[x - 1], x, y_values[x], 1)
-        #oled.show()  # Don't forget to update the screen
-        oled.text("BPM:"+str(bpm), 10, 10)
-        
-    
+        # oled.show()  # Don't forget to update the screen
+        oled.text("BPM:" + str(bpm), 10, 10)
+
+
 # === HRV-analysis ===
 def HRVAnalysis():
     global sample_index, init_sample_index, last_sample_signal, last_peak_index, peak_index, first_occurrence, threshold, last_sample_index
     global hr, mean_hr, ppi, mean_ppi, rmssd, sdnn, mainMenuActive, bpm, id
     global signal_min, signal_max
-    #print("Time to do some measurements woohoo")
+    # print("Time to do some measurements woohoo")
     # === Sample fifo instantiation ===
     samples = isr_fifo(750, 27)
     tmr = Piotimer(period=10, freq=250, mode=Piotimer.PERIODIC, callback=samples.handler)
-    #Timer
+    # Timer
     while init_sample_index < 500 and events.empty():
         if events.has_data():
             event = events.get()
@@ -300,7 +317,7 @@ def HRVAnalysis():
                 mainMenuActive = True
                 updateMenu()
                 tmr.deinit()
-        
+
         if not samples.empty():
             sample_signal = samples.get()
             if sample_signal < signal_min:
@@ -320,7 +337,7 @@ def HRVAnalysis():
             if event == 0:
                 mainMenuActive = True
                 updateMenu()
-            
+
         if not samples.empty():
             if x % 500 == 0:
                 sample_signal = samples.get()
@@ -338,7 +355,7 @@ def HRVAnalysis():
                 if sample_signal > signal_max:
                     signal_max = sample_signal
             signal_graph(sample_signal, sample_index)
-            
+
             if sample_signal - last_sample_signal < 0 and first_occurrence and sample_signal > threshold and sample_signal != 0:
                 peak_index = sample_index
                 first_occurrence = False
@@ -354,7 +371,7 @@ def HRVAnalysis():
                             bpm = int(60 / interval)
                             if 30 <= bpm <= 240:
                                 hr.append(bpm)
-                            
+
             last_peak_index = peak_index
             last_sample_signal = sample_signal
             last_sample_index = sample_index
@@ -363,7 +380,7 @@ def HRVAnalysis():
                 oled.show()
     tmr.deinit()
     if len(ppi) > 0:
-        #Kubios request here, maybe should be happening in kubios-menu?
+        # Kubios request here, maybe should be happening in kubios-menu?
         if mIndex == 1:
             kubios_request(id, ppi)
             client.connect()
@@ -404,7 +421,8 @@ def HRVAnalysis():
             init_sample_index = 0
             showResults()
             id += 1
-        
+
+
 def showSelection(index, selectionType):
     if selectionType == 0:
         # Static if-structure
@@ -412,17 +430,17 @@ def showSelection(index, selectionType):
             global mainMenuActive
             mainMenuActive = False
             oled.fill(0)
-            oled.text("Measure HR----------",1,1,1)
-            #oled.text("Rot 1: Exit.", 1, 20, 1)
+            oled.text("Measure HR----------", 1, 1, 1)
+            # oled.text("Rot 1: Exit.", 1, 20, 1)
             oled.show()
             while events.empty():
-                oled.text("Hold the sensor.", 1,30,1)
-                oled.text("Rot 1: Start",1,40,1)
+                oled.text("Hold the sensor.", 1, 30, 1)
+                oled.text("Rot 1: Start", 1, 40, 1)
                 oled.show()
                 time.sleep(0.01)
             events.get()
             HRVAnalysis()
-            #time.sleep(1)
+            # time.sleep(1)
 
         elif index == 1:
             global mainMenuActive
@@ -432,75 +450,77 @@ def showSelection(index, selectionType):
             oled.text("Rot 1: Exit.", 1, 20, 1)
             oled.show()
             while events.empty():
-                oled.text("Hold the sensor.", 1,30,1)
-                oled.text("Rot 1: Start",1,40,1)
+                oled.text("Hold the sensor.", 1, 30, 1)
+                oled.text("Rot 1: Start", 1, 40, 1)
                 oled.show()
                 time.sleep(0.01)
             events.get()
             HRVAnalysis()
-            #time.sleep(1)
-        
+            # time.sleep(1)
+
         elif index == 2:
             global mainMenuActive, menuState
             mainMenuActive = False
             menuState = "history"
             historyMenu()
-            
+
     elif selectionType == 3:
-        #History
+        # History
         if index == 0:
             global mainMenuActive
             mainMenuActive = False
             oled.fill(0)
-            #For some reason only rotating the rotary takes the user back, rather than press.
+            # For some reason only rotating the rotary takes the user back, rather than press.
             while events.empty():
-                oled.text("Log 1----------",1,1,1)
+                oled.text("Log 1----------", 1, 1, 1)
                 oled.text("Rot 1: Exit.", 1, 20, 1)
-             #   oled.show()
+            #   oled.show()
             events.get()
             printHistory(index)
-            #time.sleep(1)
+            # time.sleep(1)
 
         elif index == 1:
             global mainMenuActive
             mainMenuActive = False
             oled.fill(0)
-            #For some reason only rotating the rotary takes the user back, rather than press.
+            # For some reason only rotating the rotary takes the user back, rather than press.
             while events.empty():
                 oled.text("Log 2----------", 1, 1, 1)
                 oled.text("Rot 1: Exit.", 1, 20, 1)
-              #  oled.show()
+            #  oled.show()
             events.get()
-            printHistory(index)        
-            #time.sleep(1)
-        
+            printHistory(index)
+            # time.sleep(1)
+
         elif index == 2:
             global mainMenuActive
             mainMenuActive = False
             oled.fill(0)
-            #For some reason only rotating the rotary takes the user back, rather than press.
+            # For some reason only rotating the rotary takes the user back, rather than press.
             while events.empty():
                 oled.text("Log 3----------", 1, 1, 1)
                 oled.text("Rot 1: Exit.", 1, 20, 1)
                 oled.show()
             events.get()
-            printHistory(index)        
-            #time.sleep(1)
+            printHistory(index)
+            # time.sleep(1)
+
 
 def showResults():
-        global mainMenuActive
-        mainMenuActive = False
-        oled.fill(0)
-        oled.text("Mean HR: " + str(int(mean_hr)), 1, 1, 1)
-        oled.text("Mean PPI: " + str(int(mean_ppi)), 1, 10, 1)
-        oled.text("RMSSD: " + str(int(rmssd)), 1, 20, 1)
-        oled.text("SDNN: " + str(int(sdnn)), 1, 30, 1)
-        while events.empty():
-            oled.text("Rot 1: continue:", 1, 50, 1)
-            oled.show()
-            time.sleep(0.0001)
-        #events.get()
-            
+    global mainMenuActive
+    mainMenuActive = False
+    oled.fill(0)
+    oled.text("Mean HR: " + str(int(mean_hr)), 1, 1, 1)
+    oled.text("Mean PPI: " + str(int(mean_ppi)), 1, 10, 1)
+    oled.text("RMSSD: " + str(int(rmssd)), 1, 20, 1)
+    oled.text("SDNN: " + str(int(sdnn)), 1, 30, 1)
+    while events.empty():
+        oled.text("Rot 1: continue:", 1, 50, 1)
+        oled.show()
+        time.sleep(0.0001)
+    # events.get()
+
+
 def kubiosCloud(json, id):
     analysis = json['data']['analysis']
 
@@ -514,53 +534,57 @@ def kubiosCloud(json, id):
     oled.fill(0)
     oled.text("Mean HR: " + str(kubios_mean_hr), 0, 0)
     oled.text("Mean PPI: " + str(kubios_mean_rr_ms), 0, 10)
-    oled.text("SDNN: " + str(kubios_sdnn), 0, 20)    
+    oled.text("SDNN: " + str(kubios_sdnn), 0, 20)
     oled.text("RMSSD: " + str(kubios_rmssd), 0, 30)
-    oled.text("PNS index: " + str(kubios_pns_index), 0, 40)    
+    oled.text("PNS index: " + str(kubios_pns_index), 0, 40)
     oled.text("SNS index: " + str(kubios_sns_index), 0, 50)
     oled.show()
 
     hr_data(id, kubios_mean_hr, kubios_mean_rr_ms, kubios_rmssd, kubios_sdnn, kubios_sns_index, kubios_pns_index)
 
-    id =str(id)
+    id = str(id)
     id = id + ".txt"
     with open(id, 'w') as file:
         file.write(
             "Mean HR: " + str(kubios_mean_hr) + "\n"
-            "Mean PPI: " + str(kubios_mean_rr_ms) + "\n"
-            "SDNN: " + str(kubios_sdnn) + "\n"
-            "RMSSD: " + str(kubios_rmssd) + "\n"
-            "PNS index: " + str(kubios_pns_index) + "\n"
-            "SNS index: " + str(kubios_sns_index) + "\n"
+                                                "Mean PPI: " + str(kubios_mean_rr_ms) + "\n"
+                                                                                        "SDNN: " + str(
+                kubios_sdnn) + "\n"
+                               "RMSSD: " + str(kubios_rmssd) + "\n"
+                                                               "PNS index: " + str(kubios_pns_index) + "\n"
+                                                                                                       "SNS index: " + str(
+                kubios_sns_index) + "\n"
         )
-        
+
+
 def printHistory(id):
     oled.fill(0)
     show_y = 0
     id += 1
-    id =str(id)
+    id = str(id)
     id = id + ".txt"
     with open(id, 'r') as file:
         for line in file:
-            oled.text(line.strip(),0, show_y)
+            oled.text(line.strip(), 0, show_y)
             show_y += 10
     oled.show()
     time.sleep(1)
-                
+
+
 # === "Main loop" ===
 while True:
     if mainMenuActive:
-        #Navigation
+        # Navigation
         if rotFifo.has_data():
             while rotFifo.has_data():
                 mIndex = (mIndex + rotFifo.get()) % len(mItems)
-                #This variable can be used to detect which option we are hovering in
-                #print(mIndex)
+                # This variable can be used to detect which option we are hovering in
+                # print(mIndex)
             updateMenu()
             if mainMenuActive == False:
                 updateMenu()
 
-        #On menu
+        # On menu
         if events.has_data():
             event = events.get()
             if event == 0:
@@ -570,8 +594,8 @@ while True:
     else:
         while rotFifo.has_data():
             rotFifo.get()
-            
-        #Wait for button press to re-enter
+
+        # Wait for button press to re-enter
         if events.has_data():
             event = events.get()
             if event == 0:
