@@ -221,14 +221,14 @@ def historyMenu():
         # Napin painallus
         if events.has_data():
             event = events.get()
-            if event == 0:
-                if historyIndex == len(history_menu) - 1:  # Exit
+            if event == 0:  # Napin painallus
+                if historyIndex == len(history_menu) - 1:  # Jos valinta on "Exit"
                     menuState = "main"
                     mainMenuActive = True
                     updateMenu()
                     return
                 else:
-                    showSelection(historyIndex, 3)  # Historialogin tarkastelu
+                    showSelection(historyIndex, 3)  # Näytetään historian yksityiskohdat
 
 
 rotFifo = Fifo(30, typecode='i')
@@ -293,6 +293,11 @@ def signal_graph(val, x):
 
 # === HRV-analysis ===
 def HRVAnalysis():
+    if mIndex == 1:
+        #Connecting to internet here
+        connect_wlan()
+        #Expanded logic here
+    
     global sample_index, init_sample_index, last_sample_signal, last_peak_index, peak_index, first_occurrence, threshold, last_sample_index
     global hr, mean_hr, ppi, mean_ppi, rmssd, sdnn, mainMenuActive, bpm, id
     global signal_min, signal_max
@@ -373,9 +378,6 @@ def HRVAnalysis():
     if len(ppi) > 0:
         # Kubios request here, maybe should be happening in kubios-menu?
         if mIndex == 1:
-            #Connecting to internet here
-            connect_wlan()
-            #Expanded logic here
             kubios_request(id, ppi)
             client.connect()
             client.subscribe(b"kubios-response")
