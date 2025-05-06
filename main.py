@@ -160,10 +160,9 @@ class InterruptButton:
 
     def handler(self, pin):
         now = time.ticks_ms()
-        if time.ticks_diff(now, self.lastPress) > 250:  # 250ms cooldown
+        if time.ticks_diff(now, self.lastPress) > 200:  # 200ms cooldown
             self.lastPress = now
             self.fifo.put(0)
-
 
 class Encoder:
     def __init__(self, rot_a, rot_b, fifo):
@@ -462,7 +461,7 @@ def local():
         oled.show()
     sample_index = 1
     init_sample_index = 0
-    showResults()
+    showResults(id)
     id += 1
 
 def showSelection(index, selectionType):    
@@ -473,11 +472,11 @@ def showSelection(index, selectionType):
             mainMenuActive = False
             oled.fill(0)
             oled.text("Measure HR----------", 1, 1, 1)
-            # oled.text("Rot 1: Exit.", 1, 20, 1)
+            # oled.text("Button: Exit.", 1, 20, 1)
             oled.show()
             while events.empty():
                 oled.text("Hold the sensor.", 1, 30, 1)
-                oled.text("Rot 1: Start", 1, 40, 1)
+                oled.text("Button: Start", 1, 40, 1)
                 oled.show()
                 time.sleep(0.01)
             events.get()
@@ -489,11 +488,11 @@ def showSelection(index, selectionType):
             mainMenuActive = False
             oled.fill(0)
             oled.text("Kubios Cloud----------", 1, 1, 1)
-            oled.text("Rot 1: Exit.", 1, 20, 1)
+            oled.text("Button: Exit.", 1, 20, 1)
             oled.show()
             while events.empty():
                 oled.text("Hold the sensor.", 1, 30, 1)
-                oled.text("Rot 1: Start", 1, 40, 1)
+                oled.text("Button: Start", 1, 40, 1)
                 oled.show()
                 time.sleep(0.01)
             events.get()
@@ -509,66 +508,36 @@ def showSelection(index, selectionType):
     elif selectionType == 3:
         path = index + 1
         path = str(index) + ".txt"
-        
-        try:
-            os.stat(path)
-            #History
-            if index == 0:
-                oled.fill(0)
-                if os.stat(path):
-                    global mainMenuActive
-                    mainMenuActive = False
-                    oled.fill(0)
-                    #For some reason only rotating the rotary takes the user back, rather than press.
-                    while events.empty():
-                        printHistory(index)
-                    events.get()
-                else:
-                    global mainMenuActive
-                    mainMenuActive = False
-                    oled.fill(0)
-                    while events.empty():
-                        oled.text("Log 1----------",1,1,1)
-                        oled.show()
-
-            elif index == 1:
-                global mainMenuActive
-                mainMenuActive = False
-                oled.fill(0)
-                if os.stat(path):
-                    while events.empty():
-                        printHistory(index) 
-                    events.get()
-                else:
-                    global mainMenuActive
-                    mainMenuActive = False
-                    oled.fill(0)
-                    while events.empty():
-                        oled.text("Log 2----------",1,1,1)
-                        oled.show()
-            
-            elif index == 2:
-                global mainMenuActive
-                mainMenuActive = False
-                oled.fill(0)
-                if os.stat(path):
-                    while events.empty():
-                        printHistory(index)
-                    events.get()
-                else:
-                    global mainMenuActive
-                    mainMenuActive = False
-                    oled.fill(0)
-                    while events.empty():
-                        oled.text("Log 3----------",1,1,1)
-                        oled.show()
-        except OSError:
-            print("No file")
+        #History
+        if index == 0:
+            global mainMenuActive
+            mainMenuActive = False
             oled.fill(0)
-            oled.text("No Data.", 1, 10, 1)
-            oled.show()
+            #For some reason only rotating the rotary takes the user back, rather than press.
+            while events.empty():
+                printHistory(index)
+                time.sleep(0.05)
+            events.get()
 
-def showResults():
+        elif index == 1:
+            global mainMenuActive
+            mainMenuActive = False
+            oled.fill(0)
+            while events.empty():
+                printHistory(index) 
+                time.sleep(0.05)
+            events.get()
+        
+        elif index == 2:
+            global mainMenuActive
+            mainMenuActive = False
+            oled.fill(0)
+            while events.empty():
+                printHistory(index)
+                time.sleep(0.05)
+            events.get()
+
+def showResults(id):
     global mainMenuActive
     mainMenuActive = False
     oled.fill(0)
@@ -576,8 +545,9 @@ def showResults():
     oled.text("Mean PPI: " + str(int(mean_ppi)), 1, 10, 1)
     oled.text("RMSSD: " + str(int(rmssd)), 1, 20, 1)
     oled.text("SDNN: " + str(int(sdnn)), 1, 30, 1)
+    oled.text(f"Saved to log {id}",1,40,1)
     while events.empty():
-        oled.text("Rot 1: continue:", 1, 50, 1)
+        oled.text("Button: continue:", 1, 50, 1)
         oled.show()
         time.sleep(0.0001)
 
@@ -586,7 +556,7 @@ def showResults():
     with open(id, 'w') as file:
         file.write(
             "Mean HR: " + str(mean_hr) + "\n"
-            "Mean PPI: " + str(mean_rr_ms) + "\n"
+            "Mean PPI: " + str(mean_ppi) + "\n"
             "SDNN: " + str(sdnn) + "\n"
             "RMSSD: " + str(rmssd) + "\n"
         )
@@ -598,17 +568,24 @@ def kubiosCloud(json, id):
     kubios_mean_rr_ms = int(analysis.get("mean_rr_ms", 0))
     kubios_rmssd = int(analysis.get("rmssd_ms", 0))
     kubios_sdnn = int(analysis.get("sdnn_ms", 0))
-    kubios_pns_index = int(analysis.get("pns_index", 0))
-    kubios_sns_index = int(analysis.get("sns_index", 0))
+    kubios_pns_index = analysis.get("pns_index", 0)
+    kubios_sns_index = analysis.get("sns_index", 0)
 
     oled.fill(0)
     oled.text("Mean HR: " + str(kubios_mean_hr), 0, 0)
     oled.text("Mean PPI: " + str(kubios_mean_rr_ms), 0, 10)
     oled.text("SDNN: " + str(kubios_sdnn), 0, 20)
     oled.text("RMSSD: " + str(kubios_rmssd), 0, 30)
-    oled.text("PNS index: " + str(kubios_pns_index), 0, 40)
+    oled.text("PNS: " + str(kubios_pns_index), 0, 40)
     oled.text("SNS index: " + str(kubios_sns_index), 0, 50)
     oled.show()
+    time.sleep(5)
+    oled.fill(0)
+    while events.empty():
+        oled.text(f"Saved to log {id}",1,20,1)
+        oled.text("Button: continue:", 1, 30, 1)
+        oled.show()
+        time.sleep(0.0001)
 
     hr_data(id, kubios_mean_hr, kubios_mean_rr_ms, kubios_rmssd, kubios_sdnn, kubios_sns_index, kubios_pns_index)
 
@@ -630,11 +607,21 @@ def printHistory(id):
     show_y = 0
     id += 1
     id = str(id)
-    id = id + ".txt"
-    with open(id, 'r') as file:
-        for line in file:
-            oled.text(line.strip(), 0, show_y)
-            show_y += 10
+    path = id + ".txt"
+    try:
+        os.stat(path)
+        with open(path, 'r') as file:
+            for line in file:
+                oled.text(line.strip(), 0, show_y)
+                show_y += 10
+    except:
+        print("No file found")
+        global mainMenuActive
+        mainMenuActive = False
+        oled.fill(0)
+        while events.empty():
+            oled.text("No Data.", 1, 20, 1)
+            oled.text("Button: Exit", 1,30,1)
     oled.show()
     time.sleep(1)
 
@@ -658,7 +645,7 @@ while True:
             if event == 0:
                 showSelection(mIndex, 0)
             elif event == 2:
-                showSelection(hIndex, 3)
+                showSelection(historyIndex, 3)
     else:
         while rotFifo.has_data():
             rotFifo.get()
