@@ -322,7 +322,7 @@ def HRVAnalysis():
                 updateMenu()
             
         if not samples.empty():
-            if x % 500 == 0:
+            if sample_index % 500 == 0:
                 sample_signal = samples.get()
                 if sample_signal < signal_min:
                     signal_min = sample_signal
