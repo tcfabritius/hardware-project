@@ -14,30 +14,55 @@ import json
 
 micropython.alloc_emergency_exception_buf(200)
 
+mIndex = 0
+events = Fifo(30)
+i2c = I2C(1, scl=Pin(15), sda=Pin(14), freq=400000)
+oled = SSD1306_I2C(128, 64, i2c)
+mainMenuActive = True
+online = None
+
 # Replace these values with your own
 SSID = "KMD657_Group_4"
 PASSWORD = "TattiVanukas365#"
 BROKER_IP = "192.168.4.253"
 
-
-# Function to connect to WLAN
 def connect_wlan():
-    # Connecting to the group WLAN
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
     wlan.connect(SSID, PASSWORD)
 
-    # Attempt to connect once per second
-    while wlan.isconnected() == False:
-        print("Connecting... ")
-        sleep(1)
+    max_attempts = 10  # odotetaan maksimissaan 10 sekuntia
+    attempt = 0
 
-    # Print the IP address of the Pico
-    print("Connection successful. Pico IP:", wlan.ifconfig()[0])
+    while not wlan.isconnected() and attempt < max_attempts:
+        print("Connecting... ")
+        # Esimerkki OLED-näytölle (jos käytössä)
+        oled.fill(0)
+        oled.text("Connecting...", 0, 10)
+        oled.text(f"Attempt: {attempt + 1}/{max_attempts}", 0, 25)
+        oled.show()
+
+        sleep(1)
+        attempt += 1
+
+    if wlan.isconnected():
+        print("Connection successful. Pico IP:", wlan.ifconfig()[0])
+        oled.fill(0)
+        oled.text("Online!", 0, 10)
+        oled.text(f"IP: {wlan.ifconfig()[0]}", 0, 25)
+        online = True
+        oled.show()
+    else:
+        print("No connection.")
+        oled.fill(0)
+        oled.text("No Wi-fi", 0, 10)
+        oled.text("Measuring", 0, 20)
+        oled.text("without Kubios...", 0, 30)
+        oled.show()
 
 
 # Main program
-connect_wlan()
+#connect_wlan()
 
 # === Menu and OLED ===
 mItems = [
@@ -45,11 +70,6 @@ mItems = [
     "Kubios Cloud",
     "History"
 ]
-mIndex = 0
-events = Fifo(30)
-i2c = I2C(1, scl=Pin(15), sda=Pin(14), freq=400000)
-oled = SSD1306_I2C(128, 64, i2c)
-mainMenuActive = True
 
 # === History ===
 historyIndex = 0
@@ -386,7 +406,10 @@ def read_sensor():
     tmr.deinit()
     if len(ppi) > 0:
         if mIndex == 1:
-            kubios()
+            if online == True:
+                kubios()
+            else:
+                local()
         if mIndex == 0:
             local()
 
