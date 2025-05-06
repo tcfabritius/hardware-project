@@ -65,10 +65,6 @@ bpm = 0
 samplegraph = []
 samplesum = 0
 sampleavg = 0
-averageG = 0
-yG = 0
-minGV = 0
-maxGV = 0
 sample_index = 1
 threshold = 0
 signal_min = 65535
@@ -198,9 +194,7 @@ def updateMenu():
 
         main = f"{j + 1}. {mItems[j]}"
         oled.text(main, 10, (j + 1) * 13, 1)
-
     oled.show()
-
 
 def historyMenu():
     global historyIndex, mainMenuActive, menuState
@@ -210,9 +204,13 @@ def historyMenu():
 
     # Näytä valikkokohtia
     for i, item in enumerate(history_menu):
-        prefix = "> " if i == historyIndex else "  "
-        oled.text(prefix + item, 1, 15 + i * 10)
+        y_pos = 15 + i * 10
+        if i == historyIndex:
+            draw_bitmap(oled, heart_bitmap, 1, y_pos)  # Piirrä sydän
+        else:
+            oled.fill_rect(1, y_pos, 8, 8, 0)  # Tyhjennä alue, jos ei valittu
 
+        oled.text(item, 12, y_pos, 1)  # Siirrä tekstiä oikealle, ettei mene sydämen päälle
     oled.show()
 
     while menuState == "history":
@@ -223,22 +221,26 @@ def historyMenu():
             oled.fill(0)
             oled.text("HISTORY---------", 1, 1, 1)
             for i, item in enumerate(history_menu):
-                prefix = "> " if i == historyIndex else "  "
-                oled.text(prefix + item, 1, 15 + i * 10)
+                y_pos = 15 + i * 10
+                if i == historyIndex:
+                    draw_bitmap(oled, heart_bitmap, 1, y_pos)
+                else:
+                    oled.fill_rect(1, y_pos, 8, 8, 0)
+
+                oled.text(item, 12, y_pos, 1)
             oled.show()
 
         # Napin painallus
         if events.has_data():
             event = events.get()
-            if event == 0:  # Napin painallus
+            if event == 0:
                 if historyIndex == len(history_menu) - 1:  # Jos valinta on "Exit"
                     menuState = "main"
                     mainMenuActive = True
                     updateMenu()
                     return
                 else:
-                    showSelection(historyIndex, 3)  # Näytetään historian yksityiskohdat
-
+                    showSelection(historyIndex, 3)
 
 rotFifo = Fifo(30, typecode='i')
 rot = Encoder(10, 11, rotFifo)
@@ -342,7 +344,7 @@ def read_sensor():
                 updateMenu()
 
         if not samples.empty():
-            if x % 500 == 0:
+            if sample_index % 500 == 0:
                 sample_signal = samples.get()
                 if sample_signal < signal_min:
                     signal_min = sample_signal
