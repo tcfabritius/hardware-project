@@ -580,8 +580,16 @@ def showResults():
         oled.text("Rot 1: continue:", 1, 50, 1)
         oled.show()
         time.sleep(0.0001)
-    # events.get()
 
+    id = str(id)
+    id = id + ".txt"
+    with open(id, 'w') as file:
+        file.write(
+            "Mean HR: " + str(mean_hr) + "\n"
+            "Mean PPI: " + str(mean_rr_ms) + "\n"
+            "SDNN: " + str(sdnn) + "\n"
+            "RMSSD: " + str(rmssd) + "\n"
+        )
 
 def kubiosCloud(json, id):
     analysis = json['data']['analysis']
