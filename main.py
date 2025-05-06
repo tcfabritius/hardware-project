@@ -67,24 +67,23 @@ averageG = 0
 yG = 0
 minGV = 0
 maxGV = 0
-x = 1
-average = 0
-minV = 65535
-maxV = 0
+sample_index = 1
+threshold = 0
+signal_min = 65535
+signal_max = 0
 first_occurrence = True
-last = 0
-last_peak = 0
-peak = 0
-number = 0
-skip = 0
-y = 0
+last_sample_signal = 0
+last_peak_index = 0
+peak_index = 0
+sample_signal = 0
+init_sample_index = 0
 hr = []
 mean_hr = 0
 ppi = []
 mean_ppi = 0
 rmssd = 0
 sdnn = 0
-lastX = 0
+last_sample_index = 0
 GRAPH_HEIGHT = 64
 GRAPH_WIDTH = 128
 mqtt_data = b''
@@ -286,15 +285,15 @@ def signal_graph(val, x):
     
 # === HRV-analysis ===
 def HRVAnalysis():
-    global x, y, last, last_peak, peak, first_occurrence
-    global hr, mean_hr, ppi, mean_ppi, rmssd, sdnn
-    global minV, maxV
+    global sample_index, init_sample_index, last_sample_signal, last_peak_index, peak_index, first_occurrence, threshold, last_sample_index
+    global hr, mean_hr, ppi, mean_ppi, rmssd, sdnn, mainMenuActive, bpm, id
+    global signal_min, signal_max
     #print("Time to do some measurements woohoo")
     # === Sample fifo instantiation ===
     samples = isr_fifo(750, 27)
     tmr = Piotimer(period=10, freq=250, mode=Piotimer.PERIODIC, callback=samples.handler)
     #Timer
-    while y < 500 and events.empty():
+    while init_sample_index < 500 and events.empty():
         if events.has_data():
             event = events.get()
             if event == 0:
@@ -303,19 +302,19 @@ def HRVAnalysis():
                 tmr.deinit()
         
         if not samples.empty():
-            number = samples.get()
-            if number < minV:
-                minV = number
-            if number > maxV:
-                maxV = number
-            y += 1
-        if y == 499:
-            average = (minV + maxV) / 2
-            minV = 65535
-            maxV = 0
-            y += 1
+            sample_signal = samples.get()
+            if sample_signal < signal_min:
+                signal_min = sample_signal
+            if sample_signal > signal_max:
+                signal_max = sample_signal
+            init_sample_index += 1
+        if init_sample_index == 499:
+            threshold = (signal_min + signal_max) / 2
+            signal_min = 65535
+            signal_max = 0
+            init_sample_index += 1
 
-    while x < 7500 and events.empty():
+    while sample_index < 7500 and events.empty():
         if events.has_data():
             event = events.get()
             if event == 0:
@@ -324,86 +323,74 @@ def HRVAnalysis():
             
         if not samples.empty():
             if x % 500 == 0:
-                number = samples.get()
-                if number < minV:
-                    minV = number
-                if number > maxV:
-                    maxV = number
-                average = (minV + maxV) / 2 + (maxV - minV) * 0.15
-                minV = 65535
-                maxV = 0
+                sample_signal = samples.get()
+                if sample_signal < signal_min:
+                    signal_min = sample_signal
+                if sample_signal > signal_max:
+                    signal_max = sample_signal
+                threshold = (signal_min + signal_max) / 2 + (signal_max - signal_min) * 0.15
+                signal_min = 65535
+                signal_max = 0
             else:
-                number = samples.get()
-                if number < minV:
-                    minV = number
-                if number > maxV:
-                    maxV = number
-            signal_graph(number, x)
+                sample_signal = samples.get()
+                if sample_signal < signal_min:
+                    signal_min = sample_signal
+                if sample_signal > signal_max:
+                    signal_max = sample_signal
+            signal_graph(sample_signal, sample_index)
             
-            if number - last < 0 and first_occurrence and number > average and number != 0:
-                peak = x
+            if sample_signal - last_sample_signal < 0 and first_occurrence and sample_signal > threshold and sample_signal != 0:
+                peak_index = sample_index
                 first_occurrence = False
-            if number < average:
+            if sample_signal < threshold:
                 first_occurrence = True
-            if last_peak != 0 or peak != 0:
-                if peak - last_peak > 60:
-                    interval = (peak - last_peak)
+            if last_peak_index != 0 or peak_index != 0:
+                if peak_index - last_peak_index > 60:
+                    interval = (peak_index - last_peak_index)
                     if interval != 0:
                         interval = interval / 250
                         ppi.append(interval * 1000)
-                        global bpm
                         if interval != 0:
                             bpm = int(60 / interval)
                             if 30 <= bpm <= 240:
                                 hr.append(bpm)
                             
-            last_peak = peak
-            last = number
-            lastX = x
-            x += 1
-            if x % 30 == 0:
-                oled.show()  
-
+            last_peak_index = peak_index
+            last_sample_signal = sample_signal
+            last_sample_index = sample_index
+            sample_index += 1
+            if sample_index % 30 == 0:
+                oled.show()
     tmr.deinit()
     if len(ppi) > 0:
-        global id
         #Kubios request here, maybe should be happening in kubios-menu?
         if mIndex == 1:
             kubios_request(id, ppi)
-            
             client.connect()
             client.subscribe(b"kubios-response")
             client.wait_msg()
             data_dict = json.loads(mqtt_data)  # Convert string to dictionary
             kubiosCloud(data_dict, id)
             id += 1
-            
         if mIndex == 0:
             total = 0
-            for pi in ppi:
-                total = total + pi
-            
+            for i in ppi:
+                total = total + i
             mean_ppi = total / len(ppi)
-
             total = 0
             for h in hr:
                 total = total + h
-            
             if len(hr) > 0:
                 mean_hr = total / len(hr)
-            
-            for pi in ppi:
-                sdnn = sdnn + (pi - mean_ppi) ** 2
-            
+            for i in ppi:
+                sdnn = sdnn + (i - mean_ppi) ** 2
             sdnn = (1 / (len(ppi) - 1)) * sdnn
             sdnn = sdnn ** 0.5
-            
             for r in range(len(ppi) - 1):
                 rmssd = rmssd + (ppi[r + 1] - ppi[r]) ** 2
             rmssd = (1 / (len(ppi) - 1)) * rmssd
             rmssd = rmssd ** 0.5
-            
-            if x == 7499:
+            if sample_index == 7499:
                 print(f"Mean PPI: {mean_ppi}")
                 print(f"Mean HR: {mean_hr}")
                 print(f"SDNN: {sdnn}")
@@ -413,14 +400,8 @@ def HRVAnalysis():
                 oled.text("Interrupted.", 1, 20, 1)
                 oled.text("Wait.", 1, 30, 1)
                 oled.show()
-                x = 1
-                y = 0
-                
-            #History operation here
-
-            global id
-            x = 1
-            y = 0
+            sample_index = 1
+            init_sample_index = 0
             showResults()
             id += 1
         
