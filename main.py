@@ -426,6 +426,8 @@ def kubios():
     data_dict = json.loads(mqtt_data)  # Convert string to dictionary
     kubiosCloud(data_dict, id)
     id += 1
+    sample_index = 1
+    init_sample_index = 0
 
 def local():
     global sample_index, init_sample_index, last_sample_signal, last_peak_index, peak_index, first_occurrence, threshold, last_sample_index
