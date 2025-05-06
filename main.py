@@ -11,6 +11,7 @@ import network
 from time import sleep
 from umqtt.simple import MQTTClient
 import json
+import os
 
 micropython.alloc_emergency_exception_buf(200)
 
@@ -50,6 +51,7 @@ def connect_wlan():
         oled.fill(0)
         oled.text("Online!", 0, 10)
         oled.text(f"IP: {wlan.ifconfig()[0]}", 0, 25)
+        global online
         online = True
         oled.show()
     else:
@@ -461,9 +463,7 @@ def local():
     showResults()
     id += 1
 
-
-
-def showSelection(index, selectionType):
+def showSelection(index, selectionType):    
     if selectionType == 0:
         # Static if-structure
         if index == 0:
@@ -505,46 +505,66 @@ def showSelection(index, selectionType):
             historyMenu()
 
     elif selectionType == 3:
-        # History
-        if index == 0:
-            global mainMenuActive
-            mainMenuActive = False
-            oled.fill(0)
-            # For some reason only rotating the rotary takes the user back, rather than press.
-            while events.empty():
-                oled.text("Log 1----------", 1, 1, 1)
-                oled.text("Rot 1: Exit.", 1, 20, 1)
-            #   oled.show()
-            events.get()
-            printHistory(index)
-            # time.sleep(1)
+        path = index + 1
+        path = str(index) + ".txt"
+        
+        try:
+            os.stat(path)
+            #History
+            if index == 0:
+                oled.fill(0)
+                if os.stat(path):
+                    global mainMenuActive
+                    mainMenuActive = False
+                    oled.fill(0)
+                    #For some reason only rotating the rotary takes the user back, rather than press.
+                    while events.empty():
+                        printHistory(index)
+                    events.get()
+                else:
+                    global mainMenuActive
+                    mainMenuActive = False
+                    oled.fill(0)
+                    while events.empty():
+                        oled.text("Log 1----------",1,1,1)
+                        oled.show()
 
-        elif index == 1:
-            global mainMenuActive
-            mainMenuActive = False
+            elif index == 1:
+                global mainMenuActive
+                mainMenuActive = False
+                oled.fill(0)
+                if os.stat(path):
+                    while events.empty():
+                        printHistory(index) 
+                    events.get()
+                else:
+                    global mainMenuActive
+                    mainMenuActive = False
+                    oled.fill(0)
+                    while events.empty():
+                        oled.text("Log 2----------",1,1,1)
+                        oled.show()
+            
+            elif index == 2:
+                global mainMenuActive
+                mainMenuActive = False
+                oled.fill(0)
+                if os.stat(path):
+                    while events.empty():
+                        printHistory(index)
+                    events.get()
+                else:
+                    global mainMenuActive
+                    mainMenuActive = False
+                    oled.fill(0)
+                    while events.empty():
+                        oled.text("Log 3----------",1,1,1)
+                        oled.show()
+        except OSError:
+            print("No file")
             oled.fill(0)
-            # For some reason only rotating the rotary takes the user back, rather than press.
-            while events.empty():
-                oled.text("Log 2----------", 1, 1, 1)
-                oled.text("Rot 1: Exit.", 1, 20, 1)
-            #  oled.show()
-            events.get()
-            printHistory(index)
-            # time.sleep(1)
-
-        elif index == 2:
-            global mainMenuActive
-            mainMenuActive = False
-            oled.fill(0)
-            # For some reason only rotating the rotary takes the user back, rather than press.
-            while events.empty():
-                oled.text("Log 3----------", 1, 1, 1)
-                oled.text("Rot 1: Exit.", 1, 20, 1)
-                oled.show()
-            events.get()
-            printHistory(index)
-            # time.sleep(1)
-
+            oled.text("No Data.", 1, 10, 1)
+            oled.show()
 
 def showResults():
     global mainMenuActive
