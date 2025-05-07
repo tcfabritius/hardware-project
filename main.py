@@ -62,7 +62,6 @@ def connect_wlan():
         oled.text("without Kubios...", 0, 30)
         oled.show()
 
-
 # Main program
 #connect_wlan()
 
@@ -163,6 +162,7 @@ class InterruptButton:
         if time.ticks_diff(now, self.lastPress) > 200:  # 200ms cooldown
             self.lastPress = now
             self.fifo.put(0)
+
 
 class Encoder:
     def __init__(self, rot_a, rot_b, fifo):
@@ -464,11 +464,11 @@ def local():
     showResults(id)
     id += 1
 
-def showSelection(index, selectionType):    
+def showSelection(index, selectionType):
+    global mainMenuActive
     if selectionType == 0:
         # Static if-structure
         if index == 0:
-            global mainMenuActive
             mainMenuActive = False
             oled.fill(0)
             oled.text("Measure HR----------", 1, 1, 1)
@@ -484,7 +484,6 @@ def showSelection(index, selectionType):
             # time.sleep(1)
 
         elif index == 1:
-            global mainMenuActive
             mainMenuActive = False
             oled.fill(0)
             oled.text("Kubios Cloud----------", 1, 1, 1)
@@ -500,7 +499,7 @@ def showSelection(index, selectionType):
             # time.sleep(1)
 
         elif index == 2:
-            global mainMenuActive, menuState
+            global menuState
             mainMenuActive = False
             menuState = "history"
             historyMenu()
@@ -510,7 +509,6 @@ def showSelection(index, selectionType):
         path = str(index) + ".txt"
         #History
         if index == 0:
-            global mainMenuActive
             mainMenuActive = False
             oled.fill(0)
             #For some reason only rotating the rotary takes the user back, rather than press.
@@ -520,7 +518,6 @@ def showSelection(index, selectionType):
             events.get()
 
         elif index == 1:
-            global mainMenuActive
             mainMenuActive = False
             oled.fill(0)
             while events.empty():
@@ -529,7 +526,6 @@ def showSelection(index, selectionType):
             events.get()
         
         elif index == 2:
-            global mainMenuActive
             mainMenuActive = False
             oled.fill(0)
             while events.empty():
@@ -603,6 +599,11 @@ def kubiosCloud(json, id):
 
 
 def printHistory(id):
+    if events.has_data():
+        event = events.get()
+        if event == 0:
+            mainMenuActive = True
+            updateMenu()
     oled.fill(0)
     show_y = 0
     id += 1
@@ -616,8 +617,8 @@ def printHistory(id):
                 show_y += 10
     except:
         print("No file found")
-        global mainMenuActive
-        mainMenuActive = False
+#         global mainMenuActive
+#         mainMenuActive = False
         oled.fill(0)
         while events.empty():
             oled.text("No Data.", 1, 20, 1)
@@ -656,5 +657,3 @@ while True:
             if event == 0:
                 mainMenuActive = True
                 updateMenu()
-
-
