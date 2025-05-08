@@ -111,8 +111,6 @@ mqtt_data = b''
 id = 1
 y_values = [GRAPH_HEIGHT // 2] * GRAPH_WIDTH
 client = MQTTClient("timf", BROKER_IP, port=21883)
-data_bytes = b''
-
 
 def sub_cb(topic, msg):
     global mqtt_data
@@ -421,9 +419,8 @@ def read_sensor():
 
 
 def kubios():
-    global sample_index, init_sample_index, last_sample_signal, last_peak_index, peak_index, first_occurrence, threshold, last_sample_index
-    global hr, mean_hr, ppi, mean_ppi, rmssd, sdnn, mainMenuActive, bpm, id
-    global signal_min, signal_max
+    global sample_index, init_sample_index
+    global hr, ppi, id
     kubios_request(id, ppi)
     ppi = []
     hr = []
@@ -438,8 +435,8 @@ def kubios():
 
 
 def local():
-    global sample_index, init_sample_index, last_sample_signal, last_peak_index, peak_index, first_occurrence, threshold, last_sample_index
-    global hr, mean_hr, ppi, mean_ppi, rmssd, sdnn, mainMenuActive, bpm, id
+    global hr, mean_hr, ppi, mean_ppi, rmssd, sdnn, bpm, id
+    global sample_index, init_sample_index
     global signal_min, signal_max
     total = 0
     for i in ppi:
@@ -547,9 +544,7 @@ def showSelection(index, selectionType):
 
 
 def showResults(id):
-    global sample_index, init_sample_index, last_sample_signal, last_peak_index, peak_index, first_occurrence, threshold, last_sample_index
-    global hr, mean_hr, ppi, mean_ppi, rmssd, sdnn, mainMenuActive, bpm
-    global signal_min, signal_max
+    global mean_hr, mean_ppi, rmssd, sdnn
     global mainMenuActive
     id = (id - 1) % 3 + 1
     mainMenuActive = False
@@ -684,3 +679,4 @@ while True:
             if event == 0:
                 mainMenuActive = True
                 updateMenu()
+
