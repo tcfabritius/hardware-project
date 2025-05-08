@@ -23,7 +23,7 @@ When the prerequisites are met then you can install the project and the librarie
 
 Start a terminal, go to (use <kbd>cd</kbd> command) the directory where you want to copy the project to. Then run:
 
-<kbd>git clone --recurse-submodules https://gitlab.metropolia.fi/lansk/pico-test.git</kbd>
+<kbd>git clone --recurse-submodules https://github.com/tcfabritius/hardware-project.git</kbd>
 
 Go to the pico-test directory and run:
 
