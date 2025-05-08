@@ -25,7 +25,7 @@ Start a terminal, go to (use <kbd>cd</kbd> command) the directory where you want
 
 <kbd>git clone --recurse-submodules https://github.com/tcfabritius/hardware-project.git</kbd>
 
-Go to the pico-test directory and run:
+Go to the hardware-project directory and run:
 
 - <kbd>.\install.cmd</kbd> if you use Windows PowerShell or cmd
 
