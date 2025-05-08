@@ -27,6 +27,7 @@ SSID = "KMD657_Group_4"
 PASSWORD = "TattiVanukas365#"
 BROKER_IP = "192.168.4.253"
 
+
 def connect_wlan():
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
@@ -62,8 +63,9 @@ def connect_wlan():
         oled.text("without Kubios...", 0, 30)
         oled.show()
 
+
 # Main program
-#connect_wlan()
+# connect_wlan()
 
 # === Menu and OLED ===
 mItems = [
@@ -217,6 +219,7 @@ def updateMenu():
         oled.text(main, 10, (j + 1) * 13, 1)
     oled.show()
 
+
 def historyMenu():
     global historyIndex, mainMenuActive, menuState
 
@@ -262,6 +265,7 @@ def historyMenu():
                     return
                 else:
                     showSelection(historyIndex, 3)
+
 
 rotFifo = Fifo(30, typecode='i')
 rot = Encoder(10, 11, rotFifo)
@@ -321,6 +325,7 @@ def signal_graph(val, x):
             oled.line(x - 1, y_values[x - 1], x, y_values[x], 1)
         # oled.show()  # Don't forget to update the screen
         oled.text("BPM:" + str(bpm), 10, 10)
+
 
 def read_sensor():
     if mIndex == 1:
@@ -414,6 +419,7 @@ def read_sensor():
         if mIndex == 0:
             local()
 
+
 def kubios():
     global sample_index, init_sample_index, last_sample_signal, last_peak_index, peak_index, first_occurrence, threshold, last_sample_index
     global hr, mean_hr, ppi, mean_ppi, rmssd, sdnn, mainMenuActive, bpm, id
@@ -427,6 +433,7 @@ def kubios():
     id += 1
     sample_index = 1
     init_sample_index = 0
+
 
 def local():
     global sample_index, init_sample_index, last_sample_signal, last_peak_index, peak_index, first_occurrence, threshold, last_sample_index
@@ -463,6 +470,7 @@ def local():
     init_sample_index = 0
     showResults(id)
     id += 1
+
 
 def showSelection(index, selectionType):
     global mainMenuActive
@@ -507,11 +515,11 @@ def showSelection(index, selectionType):
     elif selectionType == 3:
         path = index + 1
         path = str(index) + ".txt"
-        #History
+        # History
         if index == 0:
             mainMenuActive = False
             oled.fill(0)
-            #For some reason only rotating the rotary takes the user back, rather than press.
+            # For some reason only rotating the rotary takes the user back, rather than press.
             while events.empty():
                 printHistory(index)
                 time.sleep(0.05)
@@ -521,10 +529,10 @@ def showSelection(index, selectionType):
             mainMenuActive = False
             oled.fill(0)
             while events.empty():
-                printHistory(index) 
+                printHistory(index)
                 time.sleep(0.05)
             events.get()
-        
+
         elif index == 2:
             mainMenuActive = False
             oled.fill(0)
@@ -532,6 +540,7 @@ def showSelection(index, selectionType):
                 printHistory(index)
                 time.sleep(0.05)
             events.get()
+
 
 def showResults(id):
     global mainMenuActive
@@ -541,7 +550,7 @@ def showResults(id):
     oled.text("Mean PPI: " + str(int(mean_ppi)), 1, 10, 1)
     oled.text("RMSSD: " + str(int(rmssd)), 1, 20, 1)
     oled.text("SDNN: " + str(int(sdnn)), 1, 30, 1)
-    oled.text(f"Saved to log {id}",1,40,1)
+    oled.text(f"Saved to log {id}", 1, 40, 1)
     while events.empty():
         oled.text("Button: continue:", 1, 50, 1)
         oled.show()
@@ -552,10 +561,12 @@ def showResults(id):
     with open(id, 'w') as file:
         file.write(
             "Mean HR: " + str(mean_hr) + "\n"
-            "Mean PPI: " + str(mean_ppi) + "\n"
-            "SDNN: " + str(sdnn) + "\n"
-            "RMSSD: " + str(rmssd) + "\n"
+                                         "Mean PPI: " + str(mean_ppi) + "\n"
+                                                                        "SDNN: " + str(sdnn) + "\n"
+                                                                                               "RMSSD: " + str(
+                rmssd) + "\n"
         )
+
 
 def kubiosCloud(json, id):
     analysis = json['data']['analysis']
@@ -578,7 +589,7 @@ def kubiosCloud(json, id):
     time.sleep(5)
     oled.fill(0)
     while events.empty():
-        oled.text(f"Saved to log {id}",1,20,1)
+        oled.text(f"Saved to log {id}", 1, 20, 1)
         oled.text("Button: continue:", 1, 30, 1)
         oled.show()
         time.sleep(0.0001)
@@ -590,11 +601,13 @@ def kubiosCloud(json, id):
     with open(id, 'w') as file:
         file.write(
             "Mean HR: " + str(kubios_mean_hr) + "\n"
-            "Mean PPI: " + str(kubios_mean_rr_ms) + "\n"
-            "SDNN: " + str(kubios_sdnn) + "\n"
-            "RMSSD: " + str(kubios_rmssd) + "\n"
-            "PNS index: " + str(kubios_pns_index) + "\n"
-            "SNS index: " + str(kubios_sns_index) + "\n"
+                                                "Mean PPI: " + str(kubios_mean_rr_ms) + "\n"
+                                                                                        "SDNN: " + str(
+                kubios_sdnn) + "\n"
+                               "RMSSD: " + str(kubios_rmssd) + "\n"
+                                                               "PNS index: " + str(kubios_pns_index) + "\n"
+                                                                                                       "SNS index: " + str(
+                kubios_sns_index) + "\n"
         )
 
 
@@ -615,45 +628,48 @@ def printHistory(id):
             for line in file:
                 oled.text(line.strip(), 0, show_y)
                 show_y += 10
-    except:
-        print("No file found")
-#         global mainMenuActive
-#         mainMenuActive = False
-        oled.fill(0)
-        while events.empty():
-            oled.text("No Data.", 1, 20, 1)
-            oled.text("Button: Exit", 1,30,1)
-    oled.show()
-    time.sleep(1)
+    except Exception as e:
+        oled.text("Error reading", 0, 10)
+        oled.text("File does not exist", 0, 20)
+        oled.text("", 0
+        30)
 
+        oled.text("Press to exit", 0, 55)
+        oled.show()
 
-# === "Main loop" ===
-while True:
-    if mainMenuActive:
-        # Navigation
-        if rotFifo.has_data():
+        if events.has_data():
+            event = events.get()
+            if event == 0:  # painallus
+                showSelection(2, 0)
+        time.sleep(0.05)  # pieni viive ettei kuormita turhaan
+
+    # === "Main loop" ===
+    while True:
+        if mainMenuActive:
+            # Navigation
+            if rotFifo.has_data():
+                while rotFifo.has_data():
+                    mIndex = (mIndex + rotFifo.get()) % len(mItems)
+                    # This variable can be used to detect which option we are hovering in
+                    # print(mIndex)
+                updateMenu()
+                if mainMenuActive == False:
+                    updateMenu()
+
+            # On menu
+            if events.has_data():
+                event = events.get()
+                if event == 0:
+                    showSelection(mIndex, 0)
+                elif event == 2:
+                    showSelection(historyIndex, 3)
+        else:
             while rotFifo.has_data():
-                mIndex = (mIndex + rotFifo.get()) % len(mItems)
-                # This variable can be used to detect which option we are hovering in
-                # print(mIndex)
-            updateMenu()
-            if mainMenuActive == False:
-                updateMenu()
+                rotFifo.get()
 
-        # On menu
-        if events.has_data():
-            event = events.get()
-            if event == 0:
-                showSelection(mIndex, 0)
-            elif event == 2:
-                showSelection(historyIndex, 3)
-    else:
-        while rotFifo.has_data():
-            rotFifo.get()
-
-        # Wait for button press to re-enter
-        if events.has_data():
-            event = events.get()
-            if event == 0:
-                mainMenuActive = True
-                updateMenu()
+            # Wait for button press to re-enter
+            if events.has_data():
+                event = events.get()
+                if event == 0:
+                    mainMenuActive = True
+                    updateMenu()
