@@ -169,15 +169,20 @@ class Encoder:
         self.a = Pin(rot_a, mode=Pin.IN)
         self.b = Pin(rot_b, mode=Pin.IN)
         self.fifo = fifo
+        self.last_time = time.ticks_ms()
+        self.debounce_ms = 300 # debounce
         self.a.irq(handler=self.handler, trigger=Pin.IRQ_RISING, hard=True)
 
     def handler(self, pin):
+        now = time.ticks_ms()
+        if time.ticks_diff(now, self.last_time) < self.debounce_ms:
+            return  # Ignore bounces
+        self.last_time = now
+
         if self.b.value():
-            # Left
-            self.fifo.put(-1)
+            self.fifo.put(-1)  # Left
         else:
-            # Right
-            self.fifo.put(1)
+            self.fifo.put(1)   # Right
 
 
 # Heart bitmap 8x8 in hex
@@ -609,13 +614,11 @@ def kubiosCloud(json, id):
     with open(id, 'w') as file:
         file.write(
             "Mean HR: " + str(int(kubios_mean_hr)) + "\n"
-                                                     "Mean PPI: " + str(int(kubios_mean_rr_ms)) + "\n"
-                                                                                                  "SDNN: " + str(
-                int(kubios_sdnn)) + "\n"
-                                    "RMSSD: " + str(int(kubios_rmssd)) + "\n"
-                                                                         "PNS index: " + str(kubios_pns_index) + "\n"
-                                                                                                                 "SNS index: " + str(
-                kubios_sns_index) + "\n"
+            "Mean PPI: " + str(int(kubios_mean_rr_ms)) + "\n"
+            "SDNN: " + str(int(kubios_sdnn)) + "\n"
+            "RMSSD: " + str(int(kubios_rmssd)) + "\n"
+            "PNS index: " + str(kubios_pns_index) + "\n"
+            "SNS index: " + str(kubios_sns_index) + "\n"
         )
 
 
