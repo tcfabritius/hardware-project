@@ -169,16 +169,9 @@ class Encoder:
         self.a = Pin(rot_a, mode=Pin.IN)
         self.b = Pin(rot_b, mode=Pin.IN)
         self.fifo = fifo
-        self.last_time = time.ticks_ms()
-        self.debounce_ms = 300 # debounce
         self.a.irq(handler=self.handler, trigger=Pin.IRQ_RISING, hard=True)
 
     def handler(self, pin):
-        now = time.ticks_ms()
-        if time.ticks_diff(now, self.last_time) < self.debounce_ms:
-            return  # Ignore bounces
-        self.last_time = now
-
         if self.b.value():
             self.fifo.put(-1)  # Left
         else:
