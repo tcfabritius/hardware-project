@@ -138,7 +138,7 @@ def hr_data(id, mean_hr, mean_ppi, rmssd, sdnn, sns, pns):
     client.connect()
     current_time = time.localtime()
     request = {
-        "id": id,
+        "id": time.localtime()[5],
         "timestamp": current_time,
         "mean_hr": mean_hr,
         "mean_ppi": mean_ppi,
